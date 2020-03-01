@@ -18,17 +18,27 @@ class Model extends BaseModel
 
     /**
      * The collection associated with the model.
-     *
      * @var string
      */
     protected $collection;
 
     /**
      * The primary key for the model.
-     *
      * @var string
      */
     protected $primaryKey = '_id';
+
+    /**
+     * The primary key type.
+     * @var string
+     */
+    protected $keyType = 'string';
+
+    /**
+     * The parent relation instance.
+     * @var Relation
+     */
+    protected $parentRelation;
 
     /**
      * The document type key for the model
@@ -43,13 +53,6 @@ class Model extends BaseModel
      * @var string
      */
     protected $tenantIdKey = 'tenant_id';
-
-    /**
-     * The parent relation instance.
-     *
-     * @var Relation
-     */
-    protected $parentRelation;
 
     /**
      * Create a new Model instance.
@@ -77,6 +80,22 @@ class Model extends BaseModel
     }
 
     /**
+     * Custom accessor for the model's id.
+     * Converts references to ->id into the Couchbase ->_id
+     * @param  mixed $value
+     * @return mixed
+     */
+    public function getIdAttribute($value = null)
+    {
+        // Allows $model->id to properly resolve to _id.
+        if (!$value && array_key_exists('_id', $this->attributes)) {
+            $value = $this->attributes['_id'];
+        }
+
+        return $value;
+    }
+
+    /**
      * Must be implemented to return the document type for this model.
      */
     public function getDocumentType()
@@ -89,23 +108,6 @@ class Model extends BaseModel
      */
     public function getTenantId(){
         return KeyId::AllTenantIndicator;
-    }
-
-    /**
-     * Custom accessor for the model's id.
-     *
-     * @param  mixed $value
-     * @return mixed
-     */
-    public function getIdAttribute($value)
-    {
-        // If we don't have a value for 'id', we will use the Couchbase '_id' value.
-        // This allows us to work with models in a more sql-like way.
-        if (!$value && array_key_exists('_id', $this->attributes)) {
-            $value = $this->attributes['_id'];
-        }
-
-        return $value;
     }
 
     /**
