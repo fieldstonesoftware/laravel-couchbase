@@ -1,4 +1,4 @@
-<?php declare(strict_types=1);
+<?php
 
 namespace Fieldstone\Couchbase;
 
@@ -17,7 +17,6 @@ class Connection extends \Illuminate\Database\Connection
 
     /**
      * The Couchbase database handler.
-     *
      * @var CouchbaseBucket
      */
     protected $bucket;
@@ -30,7 +29,6 @@ class Connection extends \Illuminate\Database\Connection
 
     /**
      * The Couchbase connection handler.
-     *
      * @var CouchbaseCluster
      */
     protected $connection;
@@ -121,8 +119,9 @@ class Connection extends \Illuminate\Database\Connection
     /**
      * Begin a fluent query against a set of document types.
      *
-     * @param  string $type
+     * @param string $type
      * @return Query\Builder
+     * @throws \Exception
      */
     public function builder($type)
     {
@@ -133,6 +132,7 @@ class Connection extends \Illuminate\Database\Connection
 
     /**
      * @return QueryBuilder
+     * @throws \Exception
      */
     public function query()
     {
@@ -298,8 +298,9 @@ class Connection extends \Illuminate\Database\Connection
     /**
      * Begin a fluent query against documents with given type.
      *
-     * @param  string $table
+     * @param string $table
      * @return Query\Builder
+     * @throws \Exception
      */
     public function type($table)
     {
@@ -309,8 +310,9 @@ class Connection extends \Illuminate\Database\Connection
     /**
      * Begin a fluent query against documents with given type.
      *
-     * @param  string $table
+     * @param string $table
      * @return Query\Builder
+     * @throws \Exception
      */
     public function table($table)
     {

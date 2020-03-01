@@ -1,4 +1,4 @@
-<?php declare(strict_types=1);
+<?php
 return [
     'connections' => [
         'couchbase-default' => strpos(env('CB_VERSION', '4'), '4') === 0 ? [
