@@ -1,13 +1,13 @@
 <?php declare(strict_types=1);
 
-namespace Mpociot\Couchbase;
+namespace Fieldstone\Couchbase;
 
 use Couchbase\N1qlQuery;
 use CouchbaseBucket;
 use CouchbaseCluster;
-use Mpociot\Couchbase\Events\QueryFired;
-use Mpociot\Couchbase\Query\Builder as QueryBuilder;
-use Mpociot\Couchbase\Query\Grammar as QueryGrammar;
+use Fieldstone\Couchbase\Events\QueryFired;
+use Fieldstone\Couchbase\Query\Builder as QueryBuilder;
+use Fieldstone\Couchbase\Query\Grammar as QueryGrammar;
 
 class Connection extends \Illuminate\Database\Connection
 {
@@ -332,7 +332,7 @@ class Connection extends \Illuminate\Database\Connection
      *
      * @return \CouchbaseBucket
      */
-    public function getCouchbaseBucket()
+    public function getCouchbaseBucket() : CouchbaseBucket
     {
         return $this->bucket;
     }

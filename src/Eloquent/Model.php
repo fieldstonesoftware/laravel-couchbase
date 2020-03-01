@@ -1,17 +1,18 @@
 <?php declare(strict_types=1);
 
-namespace Mpociot\Couchbase\Eloquent;
+namespace Fieldstone\Couchbase\Eloquent;
 
 use Illuminate\Database\Eloquent\Model as BaseModel;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Arr;
-use Mpociot\Couchbase\Query\Builder as QueryBuilder;
-use Mpociot\Couchbase\Query\Grammar;
-use Mpociot\Couchbase\Relations\EmbedsMany;
-use Mpociot\Couchbase\Relations\EmbedsOne;
+use Fieldstone\Couchbase\KeyId;
+use Fieldstone\Couchbase\Query\Builder as QueryBuilder;
+use Fieldstone\Couchbase\Query\Grammar;
+use Fieldstone\Couchbase\Relations\EmbedsMany;
+use Fieldstone\Couchbase\Relations\EmbedsOne;
 use Illuminate\Support\Str;
 
-abstract class Model extends BaseModel
+class Model extends BaseModel
 {
     use HybridRelations;
 
@@ -30,11 +31,65 @@ abstract class Model extends BaseModel
     protected $primaryKey = '_id';
 
     /**
+     * The document type key for the model
+     *
+     * @var string
+     */
+    protected $typeKey = 'doctype';
+
+    /**
+     * The document type key for the model
+     *
+     * @var string
+     */
+    protected $tenantIdKey = 'tenant_id';
+
+    /**
      * The parent relation instance.
      *
      * @var Relation
      */
     protected $parentRelation;
+
+    /**
+     * Create a new Model instance.
+     *
+     * @param array $attributes
+     * @return void
+     * @throws \Exception
+     */
+    public function _construct(array $attributes = [])
+    {
+        parent::_construct($attributes);
+
+        // always set doc type from child class
+        $this->setAttribute($this->getDocumentTypeKeyName(), $this->getDocumentType());
+
+        // always set tenant id from child class
+        $this->setAttribute($this->getTenantIdKeyName(), $this->getTenantId());
+
+        // set a new id value if needed
+        $currentKeyId = $this->getAttribute($this->getKeyName());
+        if(null === $currentKeyId || !KeyId::fKeyIsProperFormat($currentKeyId)){
+            // set ID if not provided OR if provided ID is not properly formatted
+            $this->setAttribute($this->getKeyName(), $this->getNewKeyValue());
+        }
+    }
+
+    /**
+     * Must be implemented to return the document type for this model.
+     */
+    public function getDocumentType()
+    {
+        return Str::snake(class_basename($this));
+    }
+
+    /**
+     *
+     */
+    public function getTenantId(){
+        return KeyId::AllTenantIndicator;
+    }
 
     /**
      * Custom accessor for the model's id.
@@ -46,7 +101,7 @@ abstract class Model extends BaseModel
     {
         // If we don't have a value for 'id', we will use the Couchbase '_id' value.
         // This allows us to work with models in a more sql-like way.
-        if (!$value and array_key_exists('_id', $this->attributes)) {
+        if (!$value && array_key_exists('_id', $this->attributes)) {
             $value = $this->attributes['_id'];
         }
 
@@ -68,9 +123,48 @@ abstract class Model extends BaseModel
      *
      * @return string
      */
-    public final function getKeyName()
+    public function getKeyName()
     {
         return $this->primaryKey;
+    }
+
+    /**
+     * Get the document type key for the model.
+     *
+     * @return string
+     */
+    public function getDocumentTypeKeyName()
+    {
+        return $this->typeKey;
+    }
+
+    /**
+     * Get the tenant id key for the model.
+     *
+     * @return string
+     */
+    public function getTenantIdKeyName()
+    {
+        return $this->typeKey;
+    }
+
+    /**
+     * Get the primary key for the model.
+     *
+     * @param null $type Document Type, Defaults to Snake Case Model Name
+     * @param null $tenantId Tenant ID, Default to * (all tenants)
+     * @return string
+     * @throws \Exception if something goes wrong with generating a UUID
+     */
+    public function getNewKeyValue($type = null, $tenantId = null)
+    {
+        if($type === null){
+            $type = $this->getAttribute($this->getDocumentTypeKeyName());
+        }
+        if($tenantId === null){
+            $tenantId = $this->getAttribute($this->getTenantIdKeyName());
+        }
+        return KeyId::getNewId($type, $tenantId);
     }
 
     /**
@@ -80,7 +174,7 @@ abstract class Model extends BaseModel
      * @param  string $localKey
      * @param  string $foreignKey
      * @param  string $relation
-     * @return \Mpociot\Couchbase\Relations\EmbedsMany
+     * @return \Fieldstone\Couchbase\Relations\EmbedsMany
      */
     protected function embedsMany($related, $localKey = null, $foreignKey = null, $relation = null)
     {
@@ -98,7 +192,7 @@ abstract class Model extends BaseModel
         }
 
         if (is_null($foreignKey)) {
-            $foreignKey = snake_case(class_basename($this));
+            $foreignKey = Str::snake(class_basename($this));
         }
 
         $query = $this->newQuery();
@@ -115,7 +209,7 @@ abstract class Model extends BaseModel
      * @param  string $localKey
      * @param  string $foreignKey
      * @param  string $relation
-     * @return \Mpociot\Couchbase\Relations\EmbedsOne
+     * @return \Fieldstone\Couchbase\Relations\EmbedsOne
      */
     protected function embedsOne($related, $localKey = null, $foreignKey = null, $relation = null)
     {
@@ -133,7 +227,7 @@ abstract class Model extends BaseModel
         }
 
         if (is_null($foreignKey)) {
-            $foreignKey = snake_case(class_basename($this));
+            $foreignKey = Str::snake(class_basename($this));
         }
 
         $query = $this->newQuery();
@@ -155,13 +249,21 @@ abstract class Model extends BaseModel
 
     /**
      * Get the table associated with the model.
+     * Couchbase does not have tables - we have document types
+     * within a bucket. So, we return the document type here instead of a table name
      *
      * @return string
      */
-    public function getTable()
-    {
-        return $this->table ?: parent::getTable();
-    }
+//    public function getTable()
+//    {
+//        if($this->table){
+//            return $this->table;
+//        }
+//
+//        return $this->getDocumentType();
+//
+//        return $this->table ?: parent::getTable();
+//    }
 
     /**
      * Get an attribute from the model.
@@ -172,7 +274,7 @@ abstract class Model extends BaseModel
     public function getAttribute($key)
     {
         if (!$key) {
-            return;
+            return null;
         }
 
         if ($key === $this->primaryKey && $key !== '_id') {
@@ -180,12 +282,12 @@ abstract class Model extends BaseModel
         }
 
         // Dot notation support.
-        if (str_contains($key, '.') and array_has($this->attributes, $key)) {
+        if (Str::contains($key, '.') && in_array($key, $this->attributes)) {
             return $this->getAttributeValue($key);
         }
 
         // This checks for embedded relation support.
-        if (method_exists($this, $key) and !method_exists(self::class, $key)) {
+        if (method_exists($this, $key) && !method_exists(self::class, $key)) {
             return $this->getRelationValue($key);
         }
 
@@ -201,8 +303,8 @@ abstract class Model extends BaseModel
     protected function getAttributeFromArray($key)
     {
         // Support keys in dot notation.
-        if (str_contains($key, '.')) {
-            $attributes = array_dot($this->attributes);
+        if (Str::contains($key, '.')) {
+            $attributes = Arr::dot($this->attributes);
 
             if (array_key_exists($key, $attributes)) {
                 return $attributes[$key];
@@ -225,12 +327,12 @@ abstract class Model extends BaseModel
         }
 
         // Support keys in dot notation.
-        if (str_contains($key, '.')) {
+        if (Str::contains($key, '.')) {
             if (in_array($key, $this->getDates()) && $value) {
                 $value = $this->fromDateTime($value);
             }
 
-            array_set($this->attributes, $key, $value);
+            Arr::set($this->attributes, $key, $value);
 
             return;
         }
@@ -249,8 +351,8 @@ abstract class Model extends BaseModel
 
         // Convert dot-notation dates.
         foreach ($this->getDates() as $key) {
-            if (str_contains($key, '.') and array_has($attributes, $key)) {
-                array_set($attributes, $key, (string)$this->asDateTime(array_get($attributes, $key)));
+            if (Str::contains($key, '.') and Arr::has($attributes, $key)) {
+                Arr::set($attributes, $key, (string)$this->asDateTime(Arr::get($attributes, $key)));
             }
         }
 
@@ -411,8 +513,9 @@ abstract class Model extends BaseModel
     /**
      * Create a new Eloquent query builder for the model.
      *
-     * @param  \Mpociot\Couchbase\Query\Builder $query
-     * @return \Mpociot\Couchbase\Eloquent\Builder|static
+     * @param \Fieldstone\Couchbase\Query\Builder $query
+     * @return \Fieldstone\Couchbase\Eloquent\Builder|static
+     * @throws \Exception
      */
     public function newEloquentBuilder($query)
     {
@@ -423,6 +526,7 @@ abstract class Model extends BaseModel
      * Get a new query builder instance for the connection.
      *
      * @return QueryBuilder
+     * @throws \Exception
      */
     protected function newBaseQueryBuilder()
     {
@@ -526,12 +630,12 @@ abstract class Model extends BaseModel
      * @param bool $removeColons
      * @return string
      */
-    public function getKey(bool $removeColons = false)
-    {
-        $key = $this->getAttribute($this->getKeyName());
-        if ($removeColons === true) {
-            $key = str_replace('::', '', $key);
-        }
-        return $key;
-    }
+//    public function getKey(bool $removeColons = false)
+//    {
+//        $key = $this->getAttribute($this->getKeyName());
+//        if ($removeColons === true) {
+//            $key = str_replace('::', '', $key);
+//        }
+//        return $key;
+//    }
 }

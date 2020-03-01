@@ -6,7 +6,7 @@
  * Time: 10:52
  */
 
-namespace Mpociot\Couchbase\Events;
+namespace Fieldstone\Couchbase\Events;
 
 
 class QueryFired

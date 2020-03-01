@@ -1,9 +1,9 @@
 <?php declare(strict_types=1);
 
-namespace Mpociot\Couchbase\Schema;
+namespace Fieldstone\Couchbase\Schema;
 
 use Closure;
-use Mpociot\Couchbase\Connection;
+use Fieldstone\Couchbase\Connection;
 
 class Builder extends \Illuminate\Database\Schema\Builder
 {

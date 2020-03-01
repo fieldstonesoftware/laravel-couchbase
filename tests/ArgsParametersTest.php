@@ -1,7 +1,7 @@
 <?php
 
-use Mpociot\Couchbase\Query\Builder as Query;
-use Mpociot\Couchbase\Query\Grammar;
+use Fieldstone\Couchbase\Query\Builder as Query;
+use Fieldstone\Couchbase\Query\Grammar;
 
 class ArgsParametersTest extends TestCase
 {

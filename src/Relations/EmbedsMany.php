@@ -1,11 +1,11 @@
 <?php declare(strict_types=1);
 
-namespace Mpociot\Couchbase\Relations;
+namespace Fieldstone\Couchbase\Relations;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
-use Mpociot\Couchbase\Helper;
+use Fieldstone\Couchbase\Helper;
 
 class EmbedsMany extends EmbedsOneOrMany
 {

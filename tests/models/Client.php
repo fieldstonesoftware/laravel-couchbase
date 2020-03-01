@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-use Mpociot\Couchbase\Eloquent\Model as Eloquent;
+use Fieldstone\Couchbase\Eloquent\Model as Eloquent;
 
 class Client extends Eloquent
 {

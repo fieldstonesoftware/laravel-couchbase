@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-use Mpociot\Couchbase\Events\QueryFired;
+use Fieldstone\Couchbase\Events\QueryFired;
 
 class TestCase extends Orchestra\Testbench\TestCase
 {
@@ -14,7 +14,7 @@ class TestCase extends Orchestra\Testbench\TestCase
     protected function getPackageProviders($app)
     {
         return [
-            Mpociot\Couchbase\CouchbaseServiceProvider::class,
+            Fieldstone\Couchbase\CouchbaseServiceProvider::class,
         ];
     }
 

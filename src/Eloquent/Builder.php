@@ -1,12 +1,13 @@
 <?php declare(strict_types=1);
 
-namespace Mpociot\Couchbase\Eloquent;
+namespace Fieldstone\Couchbase\Eloquent;
 
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Pagination\Paginator;
-use Mpociot\Couchbase\Query\Builder as QueryBuilder;
 use Illuminate\Database\Query\Builder as BaseQueryBuilder;
+
+use Fieldstone\Couchbase\Query\Builder as QueryBuilder;
 
 class Builder extends EloquentBuilder
 {

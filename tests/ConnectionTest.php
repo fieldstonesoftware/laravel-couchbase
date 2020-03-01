@@ -5,7 +5,7 @@ class ConnectionTest extends TestCase
     public function testConnection()
     {
         $connection = DB::connection('couchbase-default');
-        $this->assertInstanceOf('Mpociot\Couchbase\Connection', $connection);
+        $this->assertInstanceOf('Fieldstone\Couchbase\Connection', $connection);
     }
 
     /**
@@ -15,8 +15,8 @@ class ConnectionTest extends TestCase
     {
         $this->markTestSkipped('Reconnect is currently not required.');
 
-        /** @var \Mpociot\Couchbase\Connection $c1 */
-        /** @var \Mpociot\Couchbase\Connection $c2 */
+        /** @var \Fieldstone\Couchbase\Connection $c1 */
+        /** @var \Fieldstone\Couchbase\Connection $c2 */
         $c1 = DB::connection('couchbase-default');
         $requiredReference = $c1->getCouchbaseCluster();
         // $requiredReference is required because of spl_object_hash(): Once the object is destroyed, its hash may be reused for other objects.
@@ -42,8 +42,8 @@ class ConnectionTest extends TestCase
      */
     public function testConnectionSingleton()
     {
-        /** @var \Mpociot\Couchbase\Connection $c1 */
-        /** @var \Mpociot\Couchbase\Connection $c2 */
+        /** @var \Fieldstone\Couchbase\Connection $c1 */
+        /** @var \Fieldstone\Couchbase\Connection $c2 */
         $c1 = DB::connection();
         $c2 = DB::connection('couchbase-default');
         $this->assertEquals(spl_object_hash($c1), spl_object_hash($c2));
@@ -78,19 +78,19 @@ class ConnectionTest extends TestCase
     public function testBucketWithTypes()
     {
         $connection = DB::connection();
-        $this->assertInstanceOf('Mpociot\Couchbase\Query\Builder', $connection->builder('unittests'));
-        $this->assertInstanceOf('Mpociot\Couchbase\Query\Builder', $connection->table('unittests'));
-        $this->assertInstanceOf('Mpociot\Couchbase\Query\Builder', $connection->type('unittests'));
+        $this->assertInstanceOf('Fieldstone\Couchbase\Query\Builder', $connection->builder('unittests'));
+        $this->assertInstanceOf('Fieldstone\Couchbase\Query\Builder', $connection->table('unittests'));
+        $this->assertInstanceOf('Fieldstone\Couchbase\Query\Builder', $connection->type('unittests'));
 
         $connection = DB::connection('couchbase-default');
-        $this->assertInstanceOf('Mpociot\Couchbase\Query\Builder', $connection->builder('unittests'));
-        $this->assertInstanceOf('Mpociot\Couchbase\Query\Builder', $connection->table('unittests'));
-        $this->assertInstanceOf('Mpociot\Couchbase\Query\Builder', $connection->type('unittests'));
+        $this->assertInstanceOf('Fieldstone\Couchbase\Query\Builder', $connection->builder('unittests'));
+        $this->assertInstanceOf('Fieldstone\Couchbase\Query\Builder', $connection->table('unittests'));
+        $this->assertInstanceOf('Fieldstone\Couchbase\Query\Builder', $connection->type('unittests'));
 
         $connection = DB::connection('couchbase-not-default');
-        $this->assertInstanceOf('Mpociot\Couchbase\Query\Builder', $connection->builder('unittests'));
-        $this->assertInstanceOf('Mpociot\Couchbase\Query\Builder', $connection->table('unittests'));
-        $this->assertInstanceOf('Mpociot\Couchbase\Query\Builder', $connection->type('unittests'));
+        $this->assertInstanceOf('Fieldstone\Couchbase\Query\Builder', $connection->builder('unittests'));
+        $this->assertInstanceOf('Fieldstone\Couchbase\Query\Builder', $connection->table('unittests'));
+        $this->assertInstanceOf('Fieldstone\Couchbase\Query\Builder', $connection->type('unittests'));
     }
 
     public function testQueryLog()

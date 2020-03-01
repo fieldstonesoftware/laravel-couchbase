@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-namespace Mpociot\Couchbase\Query;
+namespace Fieldstone\Couchbase\Query;
 
 use Couchbase\Exception;
 use Illuminate\Contracts\Support\Arrayable;
@@ -10,8 +10,7 @@ use Illuminate\Database\Query\Expression;
 use Illuminate\Database\Query\Grammars\Grammar as BaseGrammar;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
-use Mpociot\Couchbase\Connection;
-use Mpociot\Couchbase\Helper;
+use Fieldstone\Couchbase\Connection;
 
 class Builder extends BaseBuilder
 {
@@ -24,11 +23,6 @@ class Builder extends BaseBuilder
     public $projections;
 
     public $forIns = [];
-
-    /**
-     * @var string
-     */
-    public $type;
 
     /**
      * The cursor timeout value.
@@ -150,11 +144,10 @@ class Builder extends BaseBuilder
     /**
      * Create a new query builder instance.
      *
-     * @param  ConnectionInterface $connection
-     * @param  BaseGrammar $grammar
-     * @param  Processor $processor
+     * @param ConnectionInterface $connection
+     * @param BaseGrammar $grammar
+     * @param \Illuminate\Database\Query\Processors\Processor|null $processor
      * @throws \Exception
-     * @return void
      */
     public function __construct(
         ConnectionInterface $connection,
@@ -249,10 +242,8 @@ class Builder extends BaseBuilder
     public function from($type)
     {
         $this->from = $this->connection->getBucketName();
-        $this->type = $type;
-
         if (!is_null($type)) {
-            $this->where(Helper::TYPE_NAME, $type);
+            $this->from = $type;
         }
         return $this;
     }
@@ -261,6 +252,7 @@ class Builder extends BaseBuilder
      * Create a new query instance for nested where condition.
      *
      * @return \Illuminate\Database\Query\Builder
+     * @throws \Exception
      */
     public function forNestedWhere()
     {
@@ -488,19 +480,33 @@ class Builder extends BaseBuilder
         }
 
         if (is_null($this->keys)) {
-            $this->useKeys(Helper::getUniqueId($this->type));
+            $this->useKeys($this->model->getNewKeyValue());
         }
+
+        $result = false;
+        $docTypeKey = $this->model->getDocumentTypeKeyName();
+        $docType = $this->model->getDocumentType();
+        $tenantKey = $this->model->getTenantIdKeyName();
+        $tenantId = $this->model->getTenantId();
 
         if ($batch) {
             foreach ($values as &$value) {
-                $value[Helper::TYPE_NAME] = $this->type;
-                $key = Helper::getUniqueId($this->type);
-                $result = $this->connection->getCouchbaseBucket()->upsert($key, Grammar::removeMissingValue($value));
+                $value[$docTypeKey] = $docType;
+                $value[$tenantKey] = $tenantId;
+
+                $result = $this->connection->getCouchbaseBucket()->upsert(
+                    $this->model->getNewKeyValue($docType, $tenantId)
+                    , Grammar::removeMissingValue($value)
+                );
             }
         } else {
-            $values[Helper::TYPE_NAME] = $this->type;
-            $result = $this->connection->getCouchbaseBucket()->upsert($this->keys,
-                Grammar::removeMissingValue($values));
+            $values[$docTypeKey] = $docType;
+            $values[$tenantKey] = $tenantId;
+
+            $result = $this->connection->getCouchbaseBucket()->upsert(
+                $this->model->getNewKeyValue($docType, $tenantId)
+                , Grammar::removeMissingValue($values)
+            );
         }
 
         return $result;
@@ -524,9 +530,10 @@ class Builder extends BaseBuilder
     /**
      * Insert a new record and get the value of the primary key.
      *
-     * @param  array $values
-     * @param  string $sequence
+     * @param array $values
+     * @param string $sequence
      * @return int
+     * @throws Exception if there is a problem generating UUIDs
      */
     public function insertGetId(array $values, $sequence = null)
     {
@@ -568,19 +575,6 @@ class Builder extends BaseBuilder
     public function truncate()
     {
         return $this->delete();
-    }
-
-    /**
-     * Get an array with the values of a given column.
-     *
-     * @deprecated
-     * @param  string $column
-     * @param  string $key
-     * @return array
-     */
-    public function lists($column, $key = null)
-    {
-        return $this->pluck($column, $key);
     }
 
     /**
@@ -636,11 +630,13 @@ class Builder extends BaseBuilder
         if (!is_array($value)) {
             $value = [$value];
         }
+
         if (!isset($obj->value->{$column})) {
             trigger_error('Tying to pull a value from non existing column ' . json_encode($column) . ' in document ' . json_encode($this->keys) . '.',
                 E_USER_WARNING);
             return null;
         }
+
         $filtered = collect($obj->value->{$column})->reject(function ($val, $key) use ($value) {
             $match = false;
             if (is_object($val)) {
@@ -692,9 +688,9 @@ class Builder extends BaseBuilder
     }
 
     /**
-     * @return Grammar
+     * @return BaseGrammar
      */
-    public function getGrammar() : Grammar
+    public function getGrammar() : BaseGrammar
     {
         return parent::getGrammar();
     }
@@ -703,6 +699,7 @@ class Builder extends BaseBuilder
      * Get a new instance of the query builder.
      *
      * @return Builder
+     * @throws \Exception
      */
     public function newQuery()
     {
@@ -847,19 +844,6 @@ class Builder extends BaseBuilder
         $this->options = $options;
 
         return $this;
-    }
-
-    /**
-     * @param string|int|array $values
-     *
-     * @return array
-     */
-    protected function detectValues($values)
-    {
-        foreach ($values as &$value) {
-            $value[Helper::TYPE_NAME] = $this->type;
-        }
-        return [$values];
     }
 
     /**

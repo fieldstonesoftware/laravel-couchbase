@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-namespace Mpociot\Couchbase\Eloquent;
+namespace Fieldstone\Couchbase\Eloquent;
 
 trait SoftDeletes
 {
