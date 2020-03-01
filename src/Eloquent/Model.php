@@ -205,13 +205,14 @@ class Model extends BaseModel
     }
 
     /**
-     * The table concept of RDBMSs translates to a Bucket so we return the bucket name
+     * Called when in an Eloquent query to get the table name for this.
+     * The table name concept is warped a bit here by becoming the document type.
      *
      * @return string
      */
     public function getTable()
     {
-        return $this->table ?: parent::getTable();
+        return $this->getDocumentType();
     }
 
     /**

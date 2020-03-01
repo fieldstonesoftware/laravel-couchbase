@@ -99,8 +99,7 @@ class Connection extends \Illuminate\Database\Connection
     public function builder($documentType)
     {
         $query = new QueryBuilder($this, $this->getQueryGrammar(), $this->getPostProcessor());
-
-        return $query->from($this->getDefaultBucketName());
+        return $query->from($documentType);
     }
 
     /**
@@ -287,13 +286,13 @@ class Connection extends \Illuminate\Database\Connection
     /**
      * Begin a fluent query against documents with given type.
      *
-     * @param string $table
+     * @param string $documentType
      * @return Query\Builder
      * @throws \Exception
      */
-    public function type($table)
+    public function type($documentType)
     {
-        return $this->builder($table);
+        return $this->builder($documentType);
     }
 
     /**

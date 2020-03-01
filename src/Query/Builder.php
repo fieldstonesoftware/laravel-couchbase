@@ -128,7 +128,7 @@ class Builder extends BaseBuilder
         }
 
         $config = $connection->getConfig();
-        $this->sDocTypeKey = isset($config['doctype_key']) ? $config['doctype_key'] : 'doc_type';
+        $this->sDocTypeKey = isset($config['doctype_key']) ? $config['doctype_key'] : 'type';
         $this->sTenantIdKey = isset($config['tenant_id_key']) ? $config['tenant_id_key'] : 'tenant_id';
 
         parent::__construct($connection, $grammar, $processor);
