@@ -246,14 +246,14 @@ class InlineParametersTest extends TestCase
     {
         DB::setInlineParameters(false);
         $this->assertEquals(false, DB::hasInlineParameters());
-        $this->assertQueryFiredEquals('select * from `'.DB::getBucketName().'` where eloquent_type = ? LIMIT 1', ['test'], function(){
-            DB::statement('select * from `'.DB::getBucketName().'` where eloquent_type = ? LIMIT 1', ['test']);
+        $this->assertQueryFiredEquals('select * from `'.DB::getDefaultBucketName().'` where eloquent_type = ? LIMIT 1', ['test'], function(){
+            DB::statement('select * from `'.DB::getDefaultBucketName().'` where eloquent_type = ? LIMIT 1', ['test']);
         });
 
         DB::setInlineParameters(true);
         $this->assertEquals(true, DB::hasInlineParameters());
-        $this->assertQueryFiredEquals('select * from `'.DB::getBucketName().'` where eloquent_type = "test" LIMIT 1', [], function(){
-            DB::statement('select * from `'.DB::getBucketName().'` where eloquent_type = ? LIMIT 1', ['test']);
+        $this->assertQueryFiredEquals('select * from `'.DB::getDefaultBucketName().'` where eloquent_type = "test" LIMIT 1', [], function(){
+            DB::statement('select * from `'.DB::getDefaultBucketName().'` where eloquent_type = ? LIMIT 1', ['test']);
         });
     }
 }

@@ -15,7 +15,7 @@ use Webpatser\Uuid\Uuid;
 class KeyId
 {
     public const SegmentSeparator = '-';
-    public const AllTenantIndicator = '*';
+    public const AllTenantIndicator = '!';
     public const TenantPosition = 0;
     public const TypePosition = 1;
     public const ObjectIdPosition = 2;

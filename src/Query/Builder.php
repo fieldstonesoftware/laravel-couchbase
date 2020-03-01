@@ -26,21 +26,18 @@ class Builder extends BaseBuilder
 
     /**
      * The cursor timeout value.
-     *
      * @var int
      */
     public $timeout;
 
     /**
      * The cursor hint value.
-     *
      * @var int
      */
     public $hint;
 
     /**
      * Indicate if we are executing a pagination query.
-     *
      * @var bool
      */
     public $paginating = false;
@@ -52,70 +49,25 @@ class Builder extends BaseBuilder
 
     /**
      * All of the available clause operators.
-     *
      * @var array
      */
     public $operators = [
-        '=',
-        '<',
-        '>',
-        '<=',
-        '>=',
-        '<>',
-        '!=',
-        'like',
-        'not like',
-        'between',
-        'ilike',
-        '&',
-        '|',
-        '^',
-        '<<',
-        '>>',
-        'rlike',
-        'regexp',
-        'not regexp',
-        'exists',
-        'type',
-        'mod',
-        'where',
-        'all',
-        'size',
-        'regex',
-        'text',
-        'slice',
-        'elemmatch',
-        'geowithin',
-        'geointersects',
-        'near',
-        'nearsphere',
-        'geometry',
-        'maxdistance',
-        'center',
-        'centersphere',
-        'box',
-        'polygon',
-        'uniquedocs',
+        '=', '<', '>', '<=', '>=', '<>', '!=', 'like', 'not like', 'between', 'ilike', '&', '|', '^', '<<', '>>',
+        'rlike', 'regexp', 'not regexp', 'exists', 'type', 'mod', 'where', 'all', 'size', 'regex', 'text', 'slice',
+        'elemmatch', 'geowithin', 'geointersects', 'near', 'nearsphere', 'geometry', 'maxdistance', 'center',
+        'centersphere', 'box', 'polygon', 'uniquedocs'
     ];
 
     /**
      * Operator conversion.
-     *
      * @var array
      */
     protected $conversion = [
-        '=' => '=',
-        '!=' => '$ne',
-        '<>' => '$ne',
-        '<' => '$lt',
-        '<=' => '$lte',
-        '>' => '$gt',
-        '>=' => '$gte',
+        '=' => '=', '!=' => '$ne', '<>' => '$ne', '<' => '$lt', '<=' => '$lte', '>' => '$gt', '>=' => '$gte'
     ];
 
     /**
      * Check if we need to return Collections instead of plain arrays (laravel >= 5.3 )
-     *
      * @var boolean
      */
     protected $useCollections;
@@ -142,6 +94,20 @@ class Builder extends BaseBuilder
     public $returning = ['*'];
 
     /**
+     * The field in the document that indicates its type
+     * This typically maps to a model
+     * @var string
+     */
+    public $sDocTypeKey;
+
+    /**
+     * The field in the document that indicates which tenant
+     * the document belongs to
+     * @var string
+     */
+    public $sTenantIdKey;
+
+    /**
      * Create a new query builder instance.
      *
      * @param ConnectionInterface $connection
@@ -161,14 +127,17 @@ class Builder extends BaseBuilder
             throw new \Exception('Argument 2 passed to '.get_class($this).'::__construct() must be an instance of '.Grammar::class.', instance of '.get_class($grammar).' given.');
         }
 
+        $config = $connection->getConfig();
+        $this->sDocTypeKey = isset($config['doctype_key']) ? $config['doctype_key'] : 'doc_type';
+        $this->sTenantIdKey = isset($config['tenant_id_key']) ? $config['tenant_id_key'] : 'tenant_id';
+
         parent::__construct($connection, $grammar, $processor);
         $this->useCollections = $this->shouldUseCollections();
-        $this->returning([$this->connection->getBucketName() . '.*']);
+        $this->returning([$this->connection->getDefaultBucketName() . '.*']);
     }
 
     /**
      * @param array|string $keys
-     *
      * @return $this
      * @throws Exception
      */
@@ -206,7 +175,6 @@ class Builder extends BaseBuilder
 
     /**
      * @param array $column
-     *
      * @return $this
      */
     public function returning(array $column = ['*'])
@@ -218,7 +186,6 @@ class Builder extends BaseBuilder
 
     /**
      * Returns true if Laravel or Lumen >= 5.3
-     *
      * @return bool
      */
     protected function shouldUseCollections()
@@ -235,22 +202,23 @@ class Builder extends BaseBuilder
 
     /**
      * Set the table which the query is targeting.
-     *
      * @param  string $type
      * @return $this
      */
     public function from($type)
     {
-        $this->from = $this->connection->getBucketName();
-        if (!is_null($type)) {
-            $this->from = $type;
-        }
+        // the "table" name is actually the bucket name for Couchbase
+        $this->from = $this->connection->getDefaultBucketName();
+
+        // Additionally, we add a where clause for the document type using
+        // the configuration specified document type key (the field name in the doc)
+        $this->where($this->sDocTypeKey, $type);
+
         return $this;
     }
 
     /**
      * Create a new query instance for nested where condition.
-     *
      * @return \Illuminate\Database\Query\Builder
      * @throws \Exception
      */
@@ -262,7 +230,6 @@ class Builder extends BaseBuilder
 
     /**
      * Set the projections.
-     *
      * @param  array $columns
      * @return $this
      */
@@ -275,7 +242,6 @@ class Builder extends BaseBuilder
 
     /**
      * Execute the query as a "select" statement.
-     *
      * @param  array $columns
      * @return \stdClass
      */
@@ -304,7 +270,6 @@ class Builder extends BaseBuilder
 
     /**
      * Set the cursor timeout in seconds.
-     *
      * @param  int $seconds
      * @return $this
      */
@@ -317,7 +282,6 @@ class Builder extends BaseBuilder
 
     /**
      * Set the cursor hint.
-     *
      * @param  mixed $index
      * @return $this
      */
@@ -330,10 +294,10 @@ class Builder extends BaseBuilder
 
     /**
      * Execute a query for a single record by ID.
-     *
-     * @param  mixed $id
-     * @param  array $columns
+     * @param mixed $id
+     * @param array $columns
      * @return mixed|static
+     * @throws Exception
      */
     public function find($id, $columns = ['*'])
     {
@@ -345,7 +309,6 @@ class Builder extends BaseBuilder
 
     /**
      * Generate the unique cache key for the current query.
-     *
      * @return string
      */
     public function generateCacheKey()
@@ -367,7 +330,6 @@ class Builder extends BaseBuilder
 
     /**
      * Execute an aggregate function on the database.
-     *
      * @param  string $function
      * @param  array $columns
      * @return mixed
@@ -387,7 +349,6 @@ class Builder extends BaseBuilder
 
     /**
      * Determine if any rows exist for the current query.
-     *
      * @return bool
      */
     public function exists()
@@ -397,7 +358,6 @@ class Builder extends BaseBuilder
 
     /**
      * Add a where between statement to the query.
-     *
      * @param  string $column
      * @param  array $values
      * @param  string $boolean
@@ -418,7 +378,6 @@ class Builder extends BaseBuilder
 
     /**
      * Set the bindings on the query builder.
-     *
      * @param  array $bindings
      * @param  string $type
      * @return $this
@@ -432,11 +391,9 @@ class Builder extends BaseBuilder
 
     /**
      * Add a binding to the query.
-     *
      * @param  mixed $value
      * @param  string $type
      * @return $this
-     *
      * @throws \InvalidArgumentException
      */
     public function addBinding($value, $type = 'where')
@@ -446,7 +403,6 @@ class Builder extends BaseBuilder
 
     /**
      * Set the limit and offset for a given page.
-     *
      * @param  int $page
      * @param  int $perPage
      * @return \Illuminate\Database\Query\Builder|static
@@ -460,52 +416,29 @@ class Builder extends BaseBuilder
 
     /**
      * Insert a new record into the database.
-     *
      * @param array $values
-     *
      * @return bool
+     * @throws Exception
      */
     public function insert(array $values)
     {
-        // Since every insert gets treated like a batch insert, we will have to detect
-        // if the user is inserting a single document or an array of documents.
-        $batch = true;
-        foreach ($values as $key => $value) {
-            // As soon as we find a value that is not an array we assume the user is
-            // inserting a single document.
-            if (!is_array($value) || is_string($key)) {
-                $batch = false;
-                break;
-            }
+        // Since every insert gets treated like a batch insert, we will make sure the
+        // bindings are structured in a way that is convenient when building these
+        // inserts statements by verifying these elements are actually an array.
+        if (empty($values)) {
+            return true;
         }
 
-        if (is_null($this->keys)) {
-            $this->useKeys($this->model->getNewKeyValue());
+        // Force values to an array
+        if (! is_array(reset($values))) {
+            $values = [$values];
         }
 
-        $result = false;
-        $docTypeKey = $this->model->getDocumentTypeKeyName();
-        $docType = $this->model->getDocumentType();
-        $tenantKey = $this->model->getTenantIdKeyName();
-        $tenantId = $this->model->getTenantId();
-
-        if ($batch) {
-            foreach ($values as &$value) {
-                $value[$docTypeKey] = $docType;
-                $value[$tenantKey] = $tenantId;
-
-                $result = $this->connection->getCouchbaseBucket()->upsert(
-                    $this->model->getNewKeyValue($docType, $tenantId)
-                    , Grammar::removeMissingValue($value)
-                );
-            }
-        } else {
-            $values[$docTypeKey] = $docType;
-            $values[$tenantKey] = $tenantId;
-
+        foreach ($values as &$value) {
+            $id = $value['_id'];
+            unset($value['_id']);
             $result = $this->connection->getCouchbaseBucket()->upsert(
-                $this->model->getNewKeyValue($docType, $tenantId)
-                , Grammar::removeMissingValue($values)
+                $id, Grammar::removeMissingValue($value)
             );
         }
 
@@ -514,7 +447,6 @@ class Builder extends BaseBuilder
 
     /**
      * Update a record in the database.
-     *
      * @param  array $values
      * @return int
      */
@@ -529,7 +461,6 @@ class Builder extends BaseBuilder
 
     /**
      * Insert a new record and get the value of the primary key.
-     *
      * @param array $values
      * @param string $sequence
      * @return int
@@ -548,7 +479,6 @@ class Builder extends BaseBuilder
 
     /**
      * Get an array with the values of a given column.
-     *
      * @param  string $column
      * @param  string|null $key
      * @return \Illuminate\Support\Collection
@@ -579,7 +509,6 @@ class Builder extends BaseBuilder
 
     /**
      * Append one or more values to an array.
-     *
      * @param  mixed $column
      * @param  mixed $value
      * @param bool $unique
@@ -607,10 +536,8 @@ class Builder extends BaseBuilder
 
     /**
      * Remove one or more values from an array.
-     *
      * @param  mixed $column
      * @param  mixed $value
-     *
      * @return array|\Couchbase\Document|null
      * @throws Exception
      */
@@ -658,7 +585,6 @@ class Builder extends BaseBuilder
 
     /**
      * Remove all of the expressions from a list of bindings.
-     *
      * @param  array $bindings
      * @return array
      */
@@ -672,7 +598,6 @@ class Builder extends BaseBuilder
 
     /**
      * Remove one or more fields.
-     *
      * @param  mixed $columns
      * @return int
      */
@@ -697,7 +622,6 @@ class Builder extends BaseBuilder
 
     /**
      * Get a new instance of the query builder.
-     *
      * @return Builder
      * @throws \Exception
      */
@@ -708,7 +632,6 @@ class Builder extends BaseBuilder
 
     /**
      * Run the query as a "select" statement against the connection.
-     *
      * @return \stdClass
      */
     protected function runSelectWithMeta()
@@ -722,7 +645,6 @@ class Builder extends BaseBuilder
 
     /**
      * Convert a key to ObjectID if needed.
-     *
      * @param  mixed $id
      * @return mixed
      */
@@ -733,13 +655,11 @@ class Builder extends BaseBuilder
 
     /**
      * Add a FOR ... IN query
-     *
      * @param  string $column
      * @param  mixed $value
      * @param  string $alias
      * @param  array $values
      * @return \Illuminate\Database\Query\Builder|static
-     *
      * @throws \InvalidArgumentException
      */
     public function forIn($column, $value, $alias, $values)
@@ -751,13 +671,11 @@ class Builder extends BaseBuilder
 
     /**
      * Add a basic where clause to the query.
-     *
      * @param  string $column
      * @param  string $operator
      * @param  mixed $value
      * @param  string $boolean
      * @return \Illuminate\Database\Query\Builder|static
-     *
      * @throws \InvalidArgumentException
      */
     public function where($column, $operator = null, $value = null, $boolean = 'and')
@@ -770,7 +688,6 @@ class Builder extends BaseBuilder
 
     /**
      * Add a raw where clause to the query.
-     *
      * @param  string  $sql
      * @param  mixed   $bindings
      * @param  string  $boolean
@@ -787,7 +704,6 @@ class Builder extends BaseBuilder
 
     /**
      * Add a "where null" clause to the query.
-     *
      * @param  string $column
      * @param  string $boolean
      * @param  bool $not
@@ -808,7 +724,6 @@ class Builder extends BaseBuilder
 
     /**
      * Add a "where in" clause to the query.
-     *
      * @param  string $column
      * @param  mixed $values
      * @param  string $boolean
@@ -835,7 +750,6 @@ class Builder extends BaseBuilder
 
     /**
      * Set custom options for the query.
-     *
      * @param  array $options
      * @return $this
      */
@@ -848,7 +762,6 @@ class Builder extends BaseBuilder
 
     /**
      * Handle dynamic method calls into the method.
-     *
      * @param  string $method
      * @param  array $parameters
      * @return mixed

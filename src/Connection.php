@@ -3,6 +3,7 @@
 namespace Fieldstone\Couchbase;
 
 use Couchbase\N1qlQuery;
+use Couchbase\PasswordAuthenticator;
 use CouchbaseBucket;
 use CouchbaseCluster;
 use Fieldstone\Couchbase\Events\QueryFired;
@@ -16,30 +17,31 @@ class Connection extends \Illuminate\Database\Connection
     const AUTH_TYPE_NONE = 'none';
 
     /**
-     * The Couchbase database handler.
-     * @var CouchbaseBucket
-     */
-    protected $bucket;
-
-    /** @var string[] */
-    protected $metrics;
-
-    /** @var int  default consistency */
-    protected $consistency = N1qlQuery::REQUEST_PLUS;
-
-    /**
      * The Couchbase connection handler.
      * @var CouchbaseCluster
      */
     protected $connection;
 
     /**
+     * The default Couchbase bucket name.
      * @var string
      */
-    protected $bucketname;
+    protected $sDefaultBucket;
+
+    /**
+     * The Couchbase database handler.
+     * @var CouchbaseBucket
+     */
+    protected $bucket;
 
     /** @var boolean */
-    protected $inlineParameters;
+    protected $fInlineParameters;
+
+    /** @var string[] */
+    protected $metrics;
+
+    /** @var int  default consistency */
+    protected $consistency = N1qlQuery::REQUEST_PLUS;
 
     /**
      * Create a new database connection instance.
@@ -55,45 +57,16 @@ class Connection extends \Illuminate\Database\Connection
 
         // Create the connection
         $this->connection = $this->createConnection($dsn, $config);
-        if (isset($config['username']) && isset($config['password']) && isset($config['auth_type'])) {
-            if ($config['auth_type'] === self::AUTH_TYPE_USER_PASSWORD) {
-                // Couchbase 5.x
-                $cbAuth = new \Couchbase\PasswordAuthenticator();
-                $cbAuth->username($config['username']);
-                $cbAuth->password($config['password']);
-                $this->connection->authenticate($cbAuth);
-            } elseif ($config['auth_type'] === self::AUTH_TYPE_CLUSTER_ADMIN) {
-                // Couchbase 4.x
-                $cbAuth = new \CouchbaseAuthenticator();
-                $cbAuth->cluster($config['username'], $config['password']);
-                $this->connection->authenticate($cbAuth);
-            }
-        }
 
-        // Select database
-        $this->bucketname = $config['bucket'];
-        $this->bucket = $this->connection->openBucket($this->bucketname);
-        $this->inlineParameters = isset($config['inline_parameters']) ? (bool)$config['inline_parameters'] : false;
+        // Select default bucket
+        $this->sDefaultBucket = $config['database'];
+        $this->bucket = $this->connection->openBucket($this->sDefaultBucket);
 
         $this->useDefaultQueryGrammar();
         $this->useDefaultPostProcessor();
         $this->useDefaultSchemaGrammar();
-    }
 
-    /**
-     * @param bool $inlineParameters
-     */
-    public function setInlineParameters(bool $inlineParameters)
-    {
-        $this->inlineParameters = $inlineParameters;
-    }
-
-    /**
-     * @return bool
-     */
-    public function hasInlineParameters() : bool
-    {
-        return $this->inlineParameters;
+        // intentionally not calling the base ctor
     }
 
     /**
@@ -111,23 +84,23 @@ class Connection extends \Illuminate\Database\Connection
      *
      * @return string
      */
-    public function getBucketName()
+    public function getDefaultBucketName()
     {
-        return $this->bucketname;
+        return $this->sDefaultBucket;
     }
 
     /**
      * Begin a fluent query against a set of document types.
      *
-     * @param string $type
+     * @param string $documentType
      * @return Query\Builder
      * @throws \Exception
      */
-    public function builder($type)
+    public function builder($documentType)
     {
         $query = new QueryBuilder($this, $this->getQueryGrammar(), $this->getPostProcessor());
 
-        return $query->from($type);
+        return $query->from($this->getDefaultBucketName());
     }
 
     /**
@@ -257,6 +230,22 @@ class Connection extends \Illuminate\Database\Connection
     }
 
     /**
+     * @param bool $inlineParameters
+     */
+    public function setInlineParameters(bool $inlineParameters)
+    {
+        $this->fInlineParameters = $inlineParameters;
+    }
+
+    /**
+     * @return bool
+     */
+    public function hasInlineParameters() : bool
+    {
+        return (bool) $this->fInlineParameters;
+    }
+
+    /**
      * @param string $n1ql
      * @param array $bindings
      * @return mixed
@@ -310,13 +299,13 @@ class Connection extends \Illuminate\Database\Connection
     /**
      * Begin a fluent query against documents with given type.
      *
-     * @param string $table
+     * @param string $documentType
      * @return Query\Builder
      * @throws \Exception
      */
-    public function table($table)
+    public function table($documentType)
     {
-        return $this->builder($table);
+        return $this->builder($documentType);
     }
 
     /**
@@ -341,10 +330,8 @@ class Connection extends \Illuminate\Database\Connection
 
     /**
      * Get the query grammar used by the connection.
-     *
-     * @return QueryGrammar
      */
-    public function getQueryGrammar() : QueryGrammar
+    public function getQueryGrammar()
     {
         return $this->queryGrammar;
     }
@@ -375,6 +362,14 @@ class Connection extends \Illuminate\Database\Connection
             }
             $cluster->authenticateAs(strval($config['username']), strval($config['password']));
         }
+
+        if (isset($config['username']) && isset($config['password'])) {
+            $cbAuth = new PasswordAuthenticator();
+            $cbAuth->username($config['username']);
+            $cbAuth->password($config['password']);
+            $cluster->authenticate($cbAuth);
+        }
+
         return $cluster;
     }
 

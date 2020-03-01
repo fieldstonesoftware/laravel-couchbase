@@ -151,9 +151,9 @@ class Grammar extends BaseGrammar
         $original = $query->columns;
 
         if (is_null($query->columns) || $query->columns === ['*']) {
-            $query->columns = [$this->wrapTable($query->connection->getBucketName()) . '.*'];
+            $query->columns = [$this->wrapTable($query->connection->getDefaultBucketName()) . '.*'];
         }
-        if ($query->columns === [$this->wrapTable($query->connection->getBucketName()) . '.*']) {
+        if ($query->columns === [$this->wrapTable($query->connection->getDefaultBucketName()) . '.*']) {
             $query->columns[] = self::VIRTUAL_META_ID_COLUMN;
         }
 
@@ -247,7 +247,7 @@ class Grammar extends BaseGrammar
      */
     public function getMetaIdExpression(BaseBuilder $query, $withAs = false)
     {
-        return new Expression('meta(' . $this->wrapTable($query->getConnection()->getBucketName()) . ').' . $this->wrapValue('id') . ($withAs ? ' as ' . $this->wrapValue(self::VIRTUAL_META_ID_COLUMN) : ''));
+        return new Expression('meta(' . $this->wrapTable($query->getConnection()->getDefaultBucketName()) . ').' . $this->wrapValue('id') . ($withAs ? ' as ' . $this->wrapValue(self::VIRTUAL_META_ID_COLUMN) : ''));
     }
 
     /**

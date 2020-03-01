@@ -41,45 +41,6 @@ class Model extends BaseModel
     protected $parentRelation;
 
     /**
-     * The document type key for the model
-     *
-     * @var string
-     */
-    protected $typeKey = 'doctype';
-
-    /**
-     * The document type key for the model
-     *
-     * @var string
-     */
-    protected $tenantIdKey = 'tenant_id';
-
-    /**
-     * Create a new Model instance.
-     *
-     * @param array $attributes
-     * @return void
-     * @throws \Exception
-     */
-    public function _construct(array $attributes = [])
-    {
-        parent::_construct($attributes);
-
-        // always set doc type from child class
-        $this->setAttribute($this->getDocumentTypeKeyName(), $this->getDocumentType());
-
-        // always set tenant id from child class
-        $this->setAttribute($this->getTenantIdKeyName(), $this->getTenantId());
-
-        // set a new id value if needed
-        $currentKeyId = $this->getAttribute($this->getKeyName());
-        if(null === $currentKeyId || !KeyId::fKeyIsProperFormat($currentKeyId)){
-            // set ID if not provided OR if provided ID is not properly formatted
-            $this->setAttribute($this->getKeyName(), $this->getNewKeyValue());
-        }
-    }
-
-    /**
      * Custom accessor for the model's id.
      * Converts references to ->id into the Couchbase ->_id
      * @param  mixed $value
@@ -137,7 +98,7 @@ class Model extends BaseModel
      */
     public function getDocumentTypeKeyName()
     {
-        return $this->typeKey;
+        return config('database.connections.couchbase.doctype_key');
     }
 
     /**
@@ -147,7 +108,7 @@ class Model extends BaseModel
      */
     public function getTenantIdKeyName()
     {
-        return $this->typeKey;
+        return config('database.connections.couchbase.tenant_id_key');
     }
 
     /**
@@ -158,14 +119,8 @@ class Model extends BaseModel
      * @return string
      * @throws \Exception if something goes wrong with generating a UUID
      */
-    public function getNewKeyValue($type = null, $tenantId = null)
+    public function getNewKeyValue($type, $tenantId)
     {
-        if($type === null){
-            $type = $this->getAttribute($this->getDocumentTypeKeyName());
-        }
-        if($tenantId === null){
-            $tenantId = $this->getAttribute($this->getTenantIdKeyName());
-        }
         return KeyId::getNewId($type, $tenantId);
     }
 
@@ -250,22 +205,14 @@ class Model extends BaseModel
     }
 
     /**
-     * Get the table associated with the model.
-     * Couchbase does not have tables - we have document types
-     * within a bucket. So, we return the document type here instead of a table name
+     * The table concept of RDBMSs translates to a Bucket so we return the bucket name
      *
      * @return string
      */
-//    public function getTable()
-//    {
-//        if($this->table){
-//            return $this->table;
-//        }
-//
-//        return $this->getDocumentType();
-//
-//        return $this->table ?: parent::getTable();
-//    }
+    public function getTable()
+    {
+        return $this->table ?: parent::getTable();
+    }
 
     /**
      * Get an attribute from the model.
@@ -626,18 +573,23 @@ class Model extends BaseModel
     }
 
     /**
-     * Overrides the default 'getKey' Method.
-     * You can trigger now to remove the :: from the couchbase id
-     *
-     * @param bool $removeColons
-     * @return string
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @return bool
+     * @throws \Exception
      */
-//    public function getKey(bool $removeColons = false)
-//    {
-//        $key = $this->getAttribute($this->getKeyName());
-//        if ($removeColons === true) {
-//            $key = str_replace('::', '', $key);
-//        }
-//        return $key;
-//    }
+    public function performInsert(\Illuminate\Database\Eloquent\Builder $query)
+    {
+        // set the document ID
+        $this->setAttribute($this->getKeyName()
+            , $this->getNewKeyValue($this->getDocumentType(), $this->getTenantId())
+        );
+
+        // set document type
+        $this->setAttribute($this->getDocumentTypeKeyName(), $this->getDocumentType());
+
+        // set tenant ID
+        $this->setAttribute($this->getTenantIdKeyName(), $this->getTenantId());
+
+        return parent::performInsert($query);
+    }
 }
