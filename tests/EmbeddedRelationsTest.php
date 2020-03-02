@@ -1,8 +1,19 @@
 <?php
+namespace Fieldstone\Couchbase\Test;
+
+use Address;
+use Book;
+use Client;
+use Group;
+use Item;
+use Mockery;
+use Photo;
+use Role;
+use User;
 
 class EmbeddedRelationsTest extends TestCase
 {
-    public function tearDown()
+    public function tearDown() : void
     {
         Mockery::close();
 

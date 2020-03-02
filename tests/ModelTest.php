@@ -1,8 +1,14 @@
 <?php
+namespace Fieldstone\Couchbase\Test;
+
+use Book;
+use Item;
+use Soft;
+use User;
 
 class ModelTest extends TestCase
 {
-    public function tearDown()
+    public function tearDown() : void
     {
         User::truncate();
         Soft::truncate();

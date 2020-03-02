@@ -1,27 +1,38 @@
 <?php
 
-use Fieldstone\Couchbase\Events\QueryFired;
+namespace Fieldstone\Couchbase\Test;
 
-class TestCase extends Orchestra\Testbench\TestCase
+use Dotenv\Dotenv;
+use ErrorException;
+use Exception;
+use Fieldstone\Couchbase\CouchbaseServiceProvider;
+use Fieldstone\Couchbase\Events\QueryFired;
+use Illuminate\Config\Repository;
+use Illuminate\Database\Events\QueryExecuted;
+use Illuminate\Foundation\Application;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
+
+class TestCase extends \Orchestra\Testbench\TestCase
 {
 
     /**
      * Get package providers.
      *
-     * @param  \Illuminate\Foundation\Application $app
+     * @param  Application $app
      * @return array
      */
     protected function getPackageProviders($app)
     {
         return [
-            Fieldstone\Couchbase\CouchbaseServiceProvider::class,
+            CouchbaseServiceProvider::class,
         ];
     }
 
     /**
      * Define environment setup.
      *
-     * @param  Illuminate\Foundation\Application $app
+     * @param  Application $app
      * @return void
      */
     protected function getEnvironmentSetUp($app)
@@ -29,29 +40,20 @@ class TestCase extends Orchestra\Testbench\TestCase
         // reset base path to point to our package's src directory
         //$app['path.base'] = __DIR__ . '/../src';
 
-        try {
-            (new Dotenv\Dotenv(__DIR__ . '/../', '.env'))->load();
-        } catch (Exception $e) {
-            // ignore
-        }
+        $config = require 'config/database.php';
 
-        $config = require __DIR__ . '/config/database.php';
+        $app['config']->set('app.key', 'ZsZewWyUJ5FsKp9lMwv4tYbNlegQilM7');
 
-        /** @var \Illuminate\Config\Repository $appConfig */
-        $appConfig = $app->make('config');
+        $app['config']->set('database.default', 'couchbase-default');
+        $app['config']->set('database.connections.mysql', $config['connections']['mysql']);
+        $app['config']->set('database.connections.couchbase-default', $config['connections']['couchbase-default']);
+        $app['config']->set('database.connections.couchbase-not-default', $config['connections']['couchbase-not-default']);
 
-        $appConfig->set('app.key', 'ZsZewWyUJ5FsKp9lMwv4tYbNlegQilM7');
+        $app['config']->set('auth.model', 'User');
+        $app['config']->set('auth.providers.users.model', 'User');
+        $app['config']->set('cache.driver', 'array');
 
-        $appConfig->set('database.default', 'couchbase-default');
-        $appConfig->set('database.connections.mysql', $config['connections']['mysql']);
-        $appConfig->set('database.connections.couchbase-default', $config['connections']['couchbase-default']);
-        $appConfig->set('database.connections.couchbase-not-default', $config['connections']['couchbase-not-default']);
-
-        $appConfig->set('auth.model', 'User');
-        $appConfig->set('auth.providers.users.model', 'User');
-        $appConfig->set('cache.driver', 'array');
-
-        \DB::listen(function (\Illuminate\Database\Events\QueryExecuted $sql) use (&$fh) {
+        DB::listen(function (QueryExecuted $sql) use (&$fh) {
             file_put_contents(__DIR__ . '/../sql-log.sql', $sql->sql . ";\n", FILE_APPEND);
             file_put_contents(__DIR__ . '/../sql-log.sql', '-- ' . json_encode($sql->bindings) . "\n", FILE_APPEND);
             $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 12);

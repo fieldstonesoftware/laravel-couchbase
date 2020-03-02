@@ -1,15 +1,15 @@
 <?php
+namespace Fieldstone\Couchbase\Test;
 
 use Illuminate\Support\Facades\DB;
-use Fieldstone\Couchbase\Events\QueryFired;
 
 class InlineParametersTest extends TestCase
 {
-    public static function setUpBeforeClass()
+    public function setUp() : void
     {
         putenv('CB_INLINE_PARAMETERS=false');
         putenv('CB_INLINE_PARAMETERS_DEFAULT_BUCKET=true');
-        parent::setUpBeforeClass();
+        parent::setUp();
     }
 
     /**

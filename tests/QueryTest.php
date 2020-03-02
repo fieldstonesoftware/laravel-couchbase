@@ -1,6 +1,8 @@
 <?php
+namespace Fieldstone\Couchbase\Test;
 
 use Fieldstone\Couchbase\Query\MissingValue;
+use User;
 
 class QueryTest extends TestCase
 {
@@ -9,7 +11,7 @@ class QueryTest extends TestCase
     /**
      * @group QueryTest
      */
-    public function setUp()
+    public function setUp() : void
     {
         parent::setUp();
         User::create(['name' => 'John Doe', 'age' => 35, 'title' => 'admin']);
@@ -26,7 +28,7 @@ class QueryTest extends TestCase
     /**
      * @group QueryTest
      */
-    public function tearDown()
+    public function tearDown() : void
     {
         User::truncate();
         parent::tearDown();

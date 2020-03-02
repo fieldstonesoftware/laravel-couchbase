@@ -1,14 +1,15 @@
 <?php
 
-use Fieldstone\Couchbase\Query\Builder as Query;
-use Fieldstone\Couchbase\Query\Grammar;
+namespace Fieldstone\Couchbase\Test;
+
+use Illuminate\Support\Facades\DB;
 
 class ArgsParametersTest extends TestCase
 {
-    public static function setUpBeforeClass()
+    public function setUp() : void
     {
         putenv('CB_INLINE_PARAMETERS=false');
-        parent::setUpBeforeClass();
+        parent::setUp();
     }
 
     /**

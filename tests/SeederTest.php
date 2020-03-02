@@ -1,8 +1,13 @@
 <?php
+namespace Fieldstone\Couchbase\Test;
+
+use Illuminate\Support\Facades\Artisan;
+use User;
+use UserTableSeeder;
 
 class SeederTest extends TestCase
 {
-    public function tearDown()
+    public function tearDown() : void
     {
         User::truncate();
     }

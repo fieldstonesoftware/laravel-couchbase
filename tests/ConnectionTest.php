@@ -1,4 +1,5 @@
-<?php 
+<?php
+namespace Fieldstone\Couchbase\Test;
 
 class ConnectionTest extends TestCase
 {

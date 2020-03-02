@@ -1,14 +1,16 @@
 <?php
+namespace Fieldstone\Couchbase\Test;
 
 use Fieldstone\Couchbase\Query\Builder as Query;
 use Fieldstone\Couchbase\Query\Grammar;
+use Illuminate\Support\Facades\DB;
 
 class QueryBuilderTest extends TestCase
 {
     /**
      * @group QueryBuilderTest
      */
-    public function tearDown()
+    public function tearDown() : void
     {
         DB::connection('couchbase-not-default')->table('users')->truncate();
         DB::connection('couchbase-not-default')->table('items')->truncate();

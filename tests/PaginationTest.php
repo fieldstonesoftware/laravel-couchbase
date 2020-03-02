@@ -1,8 +1,11 @@
 <?php
+namespace Fieldstone\Couchbase\Test;
+
+use User;
 
 class PaginationTest extends TestCase
 {
-    public function tearDown()
+    public function tearDown() : void
     {
         User::truncate();
         parent::tearDown();

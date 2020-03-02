@@ -1,11 +1,14 @@
 <?php
+namespace Fieldstone\Couchbase\Test;
 
-use Illuminate\Auth\Passwords\PasswordBroker;
-use Illuminate\Foundation\Application;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use User;
 
 class AuthTest extends TestCase
 {
-    public function tearDown()
+    public function tearDown() : void
     {
         User::truncate();
         DB::table('password_reminders')->truncate();
