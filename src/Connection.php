@@ -2,13 +2,13 @@
 
 namespace Fieldstone\Couchbase;
 
-use Couchbase\N1qlQuery;
-use Couchbase\PasswordAuthenticator;
-use CouchbaseBucket;
-use CouchbaseCluster;
+use Couchbase\Bucket;
+use Couchbase\Cluster;
+use Couchbase\ClusterOptions;
+use Couchbase\QueryOptions;
+use Couchbase\QueryScanConsistency;
 use Fieldstone\Couchbase\Events\QueryFired;
 use Fieldstone\Couchbase\Query\Builder as QueryBuilder;
-use Fieldstone\Couchbase\Query\Grammar as QueryGrammar;
 
 class Connection extends \Illuminate\Database\Connection
 {
@@ -17,34 +17,31 @@ class Connection extends \Illuminate\Database\Connection
     const AUTH_TYPE_NONE = 'none';
 
     /**
-     * The Couchbase connection handler.
-     * @var CouchbaseCluster
+     * The Couchbase Cluster
+     * @var Cluster
      */
     protected $connection;
 
     /**
-     * The default Couchbase bucket name.
-     * @var string
-     */
-    protected $sDefaultBucket;
-
-    /**
-     * The Couchbase database handler.
-     * @var CouchbaseBucket
+     * The Couchbase Bucket
+     * @var Bucket
      */
     protected $bucket;
 
-    /** @var boolean */
-    protected $fInlineParameters;
+    /**
+     * The Couchbase Collection
+     * @var Bucket
+     */
+    protected $collection;
 
     /** @var string[] */
     protected $metrics;
 
     /** @var int  default consistency */
-    protected $consistency = N1qlQuery::REQUEST_PLUS;
+//    protected $consistency = N1qlQuery::REQUEST_PLUS;
 
     /**
-     * Create a new database connection instance.
+     * Create a new Couchbase DB connection instance.
      *
      * @param  array $config
      */
@@ -52,20 +49,21 @@ class Connection extends \Illuminate\Database\Connection
     {
         $this->config = $config;
 
-        // Build the connection string
-        $dsn = $this->getDsn($config);
+        // Get the Cluster Address from Config
+        $address = $this->getAddress($config);
 
-        // Create the connection
-        $this->connection = $this->createConnection($dsn, $config);
+        // Set connection (Cluster)
+        $this->connection = $this->createConnection($address, $config);
 
-        // Select default bucket
-        $this->sDefaultBucket = $config['database'];
-        $this->bucket = $this->connection->openBucket($this->sDefaultBucket);
+        // Set Bucket - Opens the Connection
+        $this->bucket = $this->connection->bucket($this->getDefaultBucketName());
+
+        // Set Collection
+        $this->collection = $this->bucket->defaultCollection();
 
         $this->useDefaultQueryGrammar();
         $this->useDefaultPostProcessor();
         $this->useDefaultSchemaGrammar();
-
         // intentionally not calling the base ctor
     }
 
@@ -86,7 +84,7 @@ class Connection extends \Illuminate\Database\Connection
      */
     public function getDefaultBucketName()
     {
-        return $this->sDefaultBucket;
+        return $this->config['bucket'];
     }
 
     /**
@@ -133,13 +131,13 @@ class Connection extends \Illuminate\Database\Connection
     }
 
     /**
-     * @param N1qlQuery $query
      *
+     * @param $query
      * @return mixed
      */
-    protected function executeQuery(N1qlQuery $query)
+    protected function executeQuery($query)
     {
-        return $this->bucket->query($query);
+        return $this->bucket->query($query, true);
     }
 
     /**
@@ -229,46 +227,29 @@ class Connection extends \Illuminate\Database\Connection
     }
 
     /**
-     * @param bool $inlineParameters
-     */
-    public function setInlineParameters(bool $inlineParameters)
-    {
-        $this->fInlineParameters = $inlineParameters;
-    }
-
-    /**
-     * @return bool
-     */
-    public function hasInlineParameters() : bool
-    {
-        return (bool) $this->fInlineParameters;
-    }
-
-    /**
      * @param string $n1ql
-     * @param array $bindings
+     * @param array $bindings Positional Parameters
+     * @param int $scanConsistency
      * @return mixed
      */
-    protected function runN1qlQuery(string $n1ql, array $bindings) {
-        if($this->hasInlineParameters()) {
-            $n1ql = $this->getQueryGrammar()->applyBindings($n1ql, $bindings);
-            $bindings = [];
-        }
+    protected function runN1qlQuery($n1ql
+        , array $bindings
+        , $scanConsistency = QueryScanConsistency::NOT_BOUNDED
+    ) {
+        $options = new QueryOptions();
+        $options->positionalParameters($bindings);
+        $options->scanConsistency($scanConsistency);
 
-        $query = N1qlQuery::fromString($n1ql);
-        $query->consistency($this->consistency);
-        $query->positionalParams($bindings);
-        // TODO $query->namedParams(['parameters' => $bindings]);
-
-        $isSuccessFul = false;
+        $fSuccess = false;
         try {
-            $result = $this->executeQuery($query);
-            $isSuccessFul = true;
+            $result = $this->getCouchbaseBucket()->query($n1ql, $options);
+//            $result = $this->connection->query($n1ql, $options);
+            $fSuccess = true;
         } finally {
             $this->logQueryFired($n1ql, [
-                'consistency' => $this->consistency,
+                'consistency' => $scanConsistency,
                 'positionalParams' => $bindings,
-                'isSuccessful' => $isSuccessFul
+                'success' => $fSuccess
             ]);
         }
         return $result;
@@ -320,9 +301,9 @@ class Connection extends \Illuminate\Database\Connection
     /**
      * Get the Couchbase bucket object.
      *
-     * @return \CouchbaseBucket
+     * @return Bucket
      */
-    public function getCouchbaseBucket() : CouchbaseBucket
+    public function getCouchbaseBucket() : Bucket
     {
         return $this->bucket;
     }
@@ -336,9 +317,9 @@ class Connection extends \Illuminate\Database\Connection
     }
 
     /**
-     * return CouchbaseCluster object.
+     * return Cluster object.
      *
-     * @return \CouchbaseCluster
+     * @return Cluster
      */
     public function getCouchbaseCluster()
     {
@@ -348,28 +329,18 @@ class Connection extends \Illuminate\Database\Connection
     /**
      * Create a new Couchbase connection.
      *
-     * @param  string $dsn
-     * @param  array $config
-     * @return \CouchbaseCluster
+     * @param $address
+     * @param array $config
+     * @return Cluster
      */
-    protected function createConnection($dsn, array $config)
+    protected function createConnection($address, array $config)
     {
-        $cluster = new CouchbaseCluster($config['host']);
+        $options = new ClusterOptions();
         if (!empty($config['username']) && !empty($config['password'])) {
-            if (!method_exists($cluster, 'authenticateAs')) {
-                throw new \RuntimeException('The couchbase php sdk does not support password authentication below version 2.4.0.');
-            }
-            $cluster->authenticateAs(strval($config['username']), strval($config['password']));
+            $options->credentials(strval($config['username']), strval($config['password']));
         }
 
-        if (isset($config['username']) && isset($config['password'])) {
-            $cbAuth = new PasswordAuthenticator();
-            $cbAuth->username($config['username']);
-            $cbAuth->password($config['password']);
-            $cluster->authenticate($cbAuth);
-        }
-
-        return $cluster;
+        return new Cluster($address, $options);
     }
 
     /**
@@ -381,18 +352,13 @@ class Connection extends \Illuminate\Database\Connection
     }
 
     /**
-     * Create a DSN string from a configuration.
+     * Create an address string from a configuration.
      *
      * @param  array $config
      * @return string
      */
-    protected function getDsn(array $config)
+    protected function getAddress(array $config)
     {
-        // Check if the user passed a complete dsn to the configuration.
-        if (!empty($config['dsn'])) {
-            return $config['dsn'];
-        }
-
         // Treat host option as array of hosts
         $hosts = is_array($config['host']) ? $config['host'] : [$config['host']];
 

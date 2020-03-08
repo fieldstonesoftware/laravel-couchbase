@@ -2,12 +2,10 @@
 
 namespace Fieldstone\Couchbase\Test;
 
-use Dotenv\Dotenv;
 use ErrorException;
 use Exception;
 use Fieldstone\Couchbase\CouchbaseServiceProvider;
 use Fieldstone\Couchbase\Events\QueryFired;
-use Illuminate\Config\Repository;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\DB;
@@ -39,10 +37,14 @@ class TestCase extends \Orchestra\Testbench\TestCase
     {
         // reset base path to point to our package's src directory
         //$app['path.base'] = __DIR__ . '/../src';
-
         $config = require 'config/database.php';
 
+        $app['config']['couchbase'] = require __DIR__.'/../config/couchbase.php';
+
         $app['config']->set('app.key', 'ZsZewWyUJ5FsKp9lMwv4tYbNlegQilM7');
+
+        // clear any existing connections
+        $app['config']->offsetUnset('database.connections');
 
         $app['config']->set('database.default', 'couchbase-default');
         $app['config']->set('database.connections.mysql', $config['connections']['mysql']);
@@ -62,6 +64,7 @@ class TestCase extends \Orchestra\Testbench\TestCase
                     return ($trace['class'] ?? '') . ($trace['type'] ?? '') . ($trace['function'] ?? '') . '() called at [' . ($trace['file'] ?? '') . ':' . ($trace['line'] ?? '') . ']';
                 }, $backtrace)) . "\n\n", FILE_APPEND);
         });
+
     }
 
     protected function assertEventListenFirst($event, $callback)

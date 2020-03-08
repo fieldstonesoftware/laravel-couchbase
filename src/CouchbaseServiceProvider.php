@@ -15,6 +15,8 @@ class CouchbaseServiceProvider extends ServiceProvider
         Model::setConnectionResolver($this->app['db']);
 
         Model::setEventDispatcher($this->app['events']);
+
+        $this->publishes([__DIR__.'../config/couchbase.php' => config_path('couchbase.php')]);
     }
 
     /**

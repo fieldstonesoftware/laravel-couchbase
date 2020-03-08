@@ -96,9 +96,9 @@ class Model extends BaseModel
      *
      * @return string
      */
-    public function getDocumentTypeKeyName()
+    public static function getDocumentTypeKeyName()
     {
-        return config('database.connections.couchbase.doctype_key');
+        return config('couchbase.type_key');
     }
 
     /**
@@ -106,9 +106,9 @@ class Model extends BaseModel
      *
      * @return string
      */
-    public function getTenantIdKeyName()
+    public static function getTenantIdKeyName()
     {
-        return config('database.connections.couchbase.tenant_id_key');
+        return config('couchbase.tenant_id_key');
     }
 
     /**

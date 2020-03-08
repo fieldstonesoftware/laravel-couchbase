@@ -1,0 +1,30 @@
+version: '3.7'
+
+#networks:
+#  fieldstone-laravel-test-network:
+#    driver: bridge
+
+services:
+  fieldstone-laravel-couchbase-server:
+    build:
+      context: ./couchbase-server
+      dockerfile: Dockerfile
+    tty: true
+    restart: unless-stopped
+    ports:
+      - "8091-8096:8091-8096"
+      - "9140:9140"
+      - "11210:11210"
+      - "11211:11211"
+#    networks:
+#      - fieldstone-laravel-test-network
+#  fieldstone-laravel-test:
+#    build:
+#      context: ./test
+#      dockerfile: Dockerfile
+#    tty: true
+#    volumes:
+#      - ../../../:/var/www/html
+#    restart: unless-stopped
+#    networks:
+#      - fieldstone-laravel-test-network

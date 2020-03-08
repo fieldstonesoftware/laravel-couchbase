@@ -12,35 +12,8 @@
 >
     <testsuites>
         <testsuite name="all">
-            <directory>tests/</directory>
-        </testsuite>
-        <testsuite name="schema">
-            <directory>tests/SchemaTest.php</directory>
-        </testsuite>
-        <testsuite name="seeder">
-            <directory>tests/SeederTest.php</directory>
-        </testsuite>
-        <testsuite name="cache">
-            <directory>tests/CacheTest.php</directory>
-        </testsuite>
-        <testsuite name="builder">
-            <directory>tests/QueryBuilderTest.php</directory>
-            <directory>tests/QueryTest.php</directory>
-        </testsuite>
-        <testsuite name="model">
-            <directory>tests/ModelTest.php</directory>
-            <directory>tests/RelationsTest.php</directory>
-        </testsuite>
-        <testsuite name="relations">
-            <directory>tests/RelationsTest.php</directory>
-            <directory>tests/EmbeddedRelationsTest.php</directory>
-        </testsuite>
-        <testsuite name="mysqlrelations">
-            <directory>tests/RelationsTest.php</directory>
-            <directory>tests/MysqlRelationsTest.php</directory>
-        </testsuite>
-        <testsuite name="validation">
-            <directory>tests/ValidationTest.php</directory>
+            <file>tests/ConnectionTest.php</file>
+            <file>tests/ArgsParametersTest.php</file>
         </testsuite>
     </testsuites>
     <filter>

@@ -2,6 +2,7 @@
 
 namespace Fieldstone\Couchbase\Test;
 
+use Fieldstone\Couchbase\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 
 class ArgsParametersTest extends TestCase
@@ -18,11 +19,22 @@ class ArgsParametersTest extends TestCase
      */
     public function testParameters()
     {
-        $query = DB::table('table6')->select();
+        $dataType = 'users';
 
-        $this->assertEquals(false, config('database.connections.couchbase.inline_parameters'));
-        $this->assertEquals(false, DB::hasInlineParameters());
-        $this->assertEquals('select `' . $query->from . '`.*, meta(`' . $query->from . '`).`id` as `_id` from `' . $query->from . '` where `eloquent_type` = ?',
-            $query->toSql());
+        $query = DB::table($dataType)->select();
+        $this->assertEquals(
+            'select `'
+            . $query->from
+            . '`.*, meta(`'.$query->from.'`).`id` as `_id`'
+            . ' from `'.$query->from.'`'
+            . ' where `'.Model::getDocumentTypeKeyName().'` = ?',
+            $query->toSql()
+        );
+
+        // assert the data type used in select is the same in the bindings
+        $this->assertEquals(
+            $dataType
+            ,$query->getBindings()[0]
+        );
     }
 }

@@ -1,6 +1,10 @@
 <?php
 namespace Fieldstone\Couchbase\Test;
 
+use Couchbase\Bucket;
+use Couchbase\Cluster;
+use Illuminate\Support\Facades\DB;
+
 class ConnectionTest extends TestCase
 {
     public function testConnection()
@@ -9,38 +13,6 @@ class ConnectionTest extends TestCase
         $this->assertInstanceOf('Fieldstone\Couchbase\Connection', $connection);
     }
 
-    /**
-     * @group testReconnect
-     */
-    public function testReconnect()
-    {
-        $this->markTestSkipped('Reconnect is currently not required.');
-
-        /** @var \Fieldstone\Couchbase\Connection $c1 */
-        /** @var \Fieldstone\Couchbase\Connection $c2 */
-        $c1 = DB::connection('couchbase-default');
-        $requiredReference = $c1->getCouchbaseCluster();
-        // $requiredReference is required because of spl_object_hash(): Once the object is destroyed, its hash may be reused for other objects.
-        $hash1 = spl_object_hash($c1->getCouchbaseCluster());
-        $c2 = DB::connection('couchbase-default');
-        $hash2 = spl_object_hash($c2->getCouchbaseCluster());
-        $this->assertEquals(spl_object_hash($c1), spl_object_hash($c2));
-        $this->assertEquals($hash1, $hash2);
-
-        $c1 = DB::connection('couchbase-default');
-        $requiredReference = $c1->getCouchbaseCluster();
-        // $requiredReference is required because of spl_object_hash(): Once the object is destroyed, its hash may be reused for other objects.
-        $hash1 = spl_object_hash($c1->getCouchbaseCluster());
-        DB::purge('couchbase-default');
-        $c2 = DB::connection('couchbase-default');
-        $hash2 = spl_object_hash($c2->getCouchbaseCluster());
-        $this->assertEquals(spl_object_hash($c1), spl_object_hash($c2));
-        $this->assertNotEquals($hash1, $hash2);
-    }
-
-    /**
-     * @group testReconnect
-     */
     public function testConnectionSingleton()
     {
         /** @var \Fieldstone\Couchbase\Connection $c1 */
@@ -64,16 +36,16 @@ class ConnectionTest extends TestCase
     public function testDb()
     {
         $connection = DB::connection();
-        $this->assertInstanceOf('CouchbaseBucket', $connection->getCouchbaseBucket());
-        $this->assertInstanceOf('CouchbaseCluster', $connection->getCouchbaseCluster());
+        $this->assertInstanceOf(Bucket::class, $connection->getCouchbaseBucket());
+        $this->assertInstanceOf(Cluster::class, $connection->getCouchbaseCluster());
 
         $connection = DB::connection('couchbase-default');
-        $this->assertInstanceOf('CouchbaseBucket', $connection->getCouchbaseBucket());
-        $this->assertInstanceOf('CouchbaseCluster', $connection->getCouchbaseCluster());
+        $this->assertInstanceOf(Bucket::class, $connection->getCouchbaseBucket());
+        $this->assertInstanceOf(Cluster::class, $connection->getCouchbaseCluster());
 
         $connection = DB::connection('couchbase-not-default');
-        $this->assertInstanceOf('CouchbaseBucket', $connection->getCouchbaseBucket());
-        $this->assertInstanceOf('CouchbaseCluster', $connection->getCouchbaseCluster());
+        $this->assertInstanceOf(Bucket::class, $connection->getCouchbaseBucket());
+        $this->assertInstanceOf(Cluster::class, $connection->getCouchbaseCluster());
     }
 
     public function testBucketWithTypes()
@@ -96,7 +68,7 @@ class ConnectionTest extends TestCase
 
     public function testQueryLog()
     {
-        DB::enableQueryLog();
+        DB::connection()->enableQueryLog();
 
         $this->assertEquals(0, count(DB::getQueryLog()));
 
