@@ -32,7 +32,8 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "Fieldstone\\Couchbase\\Test\\": "tests/"
+            "Fieldstone\\Couchbase\\Test\\": "tests/",
+            "Fieldstone\\Couchbase\\Test\\Model\\": "tests/models"
         }
     },
     "extra": {

@@ -1,8 +1,9 @@
 <?php
+namespace Fieldstone\Couchbase\Test\Model;
 
-use Fieldstone\Couchbase\Eloquent\Model as Eloquent;
+use Fieldstone\Couchbase\Eloquent\Model as CBModel;
 
-class Book extends Eloquent
+class Book extends CBModel
 {
     protected $connection = 'couchbase-not-default';
     protected $table = 'books';

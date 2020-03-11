@@ -1,10 +1,10 @@
 <?php
 namespace Fieldstone\Couchbase\Test;
 
+use Fieldstone\Couchbase\Test\Model\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use User;
 
 class AuthTest extends TestCase
 {

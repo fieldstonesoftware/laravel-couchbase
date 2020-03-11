@@ -1,10 +1,11 @@
 <?php
+namespace Fieldstone\Couchbase\Test\Model;
 
-use Illuminate\Database\Eloquent\Model as Eloquent;
+use Illuminate\Database\Eloquent\Model as EloquentModel;
 use Illuminate\Support\Facades\Schema;
 use Fieldstone\Couchbase\Eloquent\HybridRelations;
 
-class MysqlRole extends Eloquent
+class MysqlRole extends EloquentModel
 {
     use HybridRelations;
 

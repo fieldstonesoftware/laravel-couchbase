@@ -1,11 +1,11 @@
 <?php
 
-use Fieldstone\Couchbase\Eloquent\Model as Eloquent;
-use Fieldstone\Couchbase\Eloquent\SoftDeletes;
+use Fieldstone\Couchbase\Eloquent\Model as CBModel;
+use Fieldstone\Couchbase\Eloquent\SoftDeletes as CBSoftDeletes;
 
-class Soft extends Eloquent
+class Soft extends CBModel
 {
-    use SoftDeletes;
+    use CBSoftDeletes;
 
     protected $connection = 'couchbase-not-default';
     protected $table = 'soft';

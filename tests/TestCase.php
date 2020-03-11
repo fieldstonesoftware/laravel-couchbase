@@ -37,7 +37,7 @@ class TestCase extends \Orchestra\Testbench\TestCase
     {
         // reset base path to point to our package's src directory
         //$app['path.base'] = __DIR__ . '/../src';
-        $config = require 'config/database.php';
+        $dbConfig = require 'config/database.php';
 
         $app['config']['couchbase'] = require __DIR__.'/../config/couchbase.php';
 
@@ -47,12 +47,12 @@ class TestCase extends \Orchestra\Testbench\TestCase
         $app['config']->offsetUnset('database.connections');
 
         $app['config']->set('database.default', 'couchbase-default');
-        $app['config']->set('database.connections.mysql', $config['connections']['mysql']);
-        $app['config']->set('database.connections.couchbase-default', $config['connections']['couchbase-default']);
-        $app['config']->set('database.connections.couchbase-not-default', $config['connections']['couchbase-not-default']);
+        $app['config']->set('database.connections.mysql', $dbConfig['connections']['mysql']);
+        $app['config']->set('database.connections.couchbase-default', $dbConfig['connections']['couchbase-default']);
+        $app['config']->set('database.connections.couchbase-not-default', $dbConfig['connections']['couchbase-not-default']);
 
-        $app['config']->set('auth.model', 'User');
-        $app['config']->set('auth.providers.users.model', 'User');
+        $app['config']->set('auth.model', '\Fieldstone\Couchbase\Test\Model\User');
+        $app['config']->set('auth.providers.users.model', '\Fieldstone\Couchbase\Test\Model\User');
         $app['config']->set('cache.driver', 'array');
 
         DB::listen(function (QueryExecuted $sql) use (&$fh) {

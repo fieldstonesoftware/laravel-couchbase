@@ -1,8 +1,8 @@
 <?php
 
-use Fieldstone\Couchbase\Eloquent\Model as Eloquent;
+use Fieldstone\Couchbase\Eloquent\Model as CBModel;
 
-class Role extends Eloquent
+class Role extends CBModel
 {
     protected $connection = 'couchbase-not-default';
     protected $table = 'roles';

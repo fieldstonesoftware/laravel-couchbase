@@ -1,10 +1,13 @@
 <?php
 
-use Fieldstone\Couchbase\Eloquent\Model as CBModel;
+namespace Fieldstone\Couchbase\Test\Model;
+
 use Illuminate\Auth\Authenticatable;
 use Illuminate\Auth\Passwords\CanResetPassword;
 use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
 use Illuminate\Contracts\Auth\CanResetPassword as CanResetPasswordContract;
+
+use Fieldstone\Couchbase\Eloquent\Model as CBModel;
 
 class User extends CBModel implements AuthenticatableContract, CanResetPasswordContract
 {
