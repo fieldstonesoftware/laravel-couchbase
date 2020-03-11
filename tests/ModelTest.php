@@ -1,10 +1,11 @@
 <?php
 namespace Fieldstone\Couchbase\Test;
 
-use Book;
-use Item;
-use Soft;
-use User;
+
+use Fieldstone\Couchbase\Test\Model\Book;
+use Fieldstone\Couchbase\Test\Model\Item;
+use Fieldstone\Couchbase\Test\Model\User;
+use Fieldstone\Couchbase\Test\Model\Soft;
 
 class ModelTest extends TestCase
 {
@@ -22,7 +23,7 @@ class ModelTest extends TestCase
         $this->assertInstanceOf('Fieldstone\Couchbase\Eloquent\Model', $user);
         $this->assertInstanceOf('Fieldstone\Couchbase\Connection', $user->getConnection());
         $this->assertEquals(false, $user->exists);
-        $this->assertEquals('users', $user->getTable());
+        $this->assertEquals('user', $user->getTable()); // User is a CB Model, has a singular table name because it's a type
         $this->assertEquals('_id', $user->getKeyName());
     }
 
@@ -100,7 +101,7 @@ class ModelTest extends TestCase
         $this->assertEquals('customId', $user->_id);
 
         $raw = $user->getAttributes();
-        $this->assertInternalType('string', $raw['_id']);
+        $this->assertIsString($raw['_id']);
     }
 
     public function testManualIntId()
@@ -116,7 +117,7 @@ class ModelTest extends TestCase
         $this->assertEquals('1', $user->_id);
 
         $raw = $user->getAttributes();
-        $this->assertInternalType('string', $raw['_id']);
+        $this->assertIsString($raw['_id']);
     }
 
     public function testDelete()
@@ -182,7 +183,7 @@ class ModelTest extends TestCase
         ]);
 
         $users = User::get();
-        $this->assertEquals(2, count($users));
+        $this->assertEquals(2, $users->count());
         $this->assertInstanceOf('Illuminate\Database\Eloquent\Collection', $users);
         $this->assertInstanceOf('Fieldstone\Couchbase\Eloquent\Model', $users[0]);
     }
@@ -196,7 +197,9 @@ class ModelTest extends TestCase
 
         $user = User::first();
         $this->assertInstanceOf('Fieldstone\Couchbase\Eloquent\Model', $user);
-        $this->assertEquals('John Doe', $user->name);
+        // This assertion would make no sense because first() implies some order
+        // Our documents are not using numeric IDs so the order returned is arbitrary
+        //$this->assertEquals('John Doe', $user->name);
     }
 
     public function testNoDocument()
@@ -214,7 +217,7 @@ class ModelTest extends TestCase
 
     public function testFindOrfail()
     {
-        $this->setExpectedException('Illuminate\Database\Eloquent\ModelNotFoundException');
+        $this->expectException('Illuminate\Database\Eloquent\ModelNotFoundException');
         User::findOrfail('51c33d8981fec6813e00000a');
     }
 
@@ -375,8 +378,8 @@ class ModelTest extends TestCase
     public function testScope()
     {
         Item::insert([
-            ['name' => 'knife', 'type' => 'sharp'],
-            ['name' => 'spoon', 'type' => 'round'],
+            ['name' => 'knife', 'category' => 'sharp'],
+            ['name' => 'spoon', 'category' => 'round'],
         ]);
 
         $sharp = Item::sharp()->get();
@@ -385,12 +388,19 @@ class ModelTest extends TestCase
 
     public function testToArray()
     {
-        $item = Item::create(['name' => 'fork', 'type' => 'sharp']);
+        $item = Item::create(['name' => 'fork', 'category' => 'sharp']);
 
         $array = $item->toArray();
         $keys = array_keys($array);
         sort($keys);
-        $this->assertEquals(['_id', 'created_at', 'name', 'type', 'updated_at'], $keys);
+        $this->assertEquals(['_id'
+            , 'category'
+            , 'created_at'
+            , 'name'
+            , 'tenant_id'
+            , 'type'
+            , 'updated_at'
+        ], $keys);
         $this->assertTrue(is_string($array['created_at']));
         $this->assertTrue(is_string($array['updated_at']));
         $this->assertTrue(is_string($array['_id']));

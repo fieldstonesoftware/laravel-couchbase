@@ -2,7 +2,7 @@
 namespace Fieldstone\Couchbase\Test;
 
 use Fieldstone\Couchbase\Query\MissingValue;
-use User;
+use Fieldstone\Couchbase\Test\Model\User;
 
 class QueryTest extends TestCase
 {
@@ -208,15 +208,6 @@ class QueryTest extends TestCase
 
         $user = User::whereNotNull('age')->orderBy('age', 'desc')->first();
         $this->assertEquals(37, $user->age);
-
-        $user = User::whereNotNull('age')->orderBy('natural', 'asc')->first();
-        $this->assertEquals(35, $user->age);
-
-        $user = User::whereNotNull('age')->orderBy('natural', 'ASC')->first();
-        $this->assertEquals(35, $user->age);
-
-        $user = User::whereNotNull('age')->orderBy('natural', 'desc')->first();
-        $this->assertEquals(35, $user->age);
     }
 
     /**
@@ -305,8 +296,9 @@ class QueryTest extends TestCase
     {
         $results = User::paginate(2);
         $this->assertEquals(2, $results->count());
-        $this->assertNotNull($results->first()->title);
         $this->assertEquals(9, $results->total());
+        $first = $results->first();
+        $this->assertNotNull($first->title);
 
         $results = User::paginate(2, ['name', 'age']);
         $this->assertEquals(2, $results->count());
@@ -321,7 +313,7 @@ class QueryTest extends TestCase
     public function testPluckIdId()
     {
         $result = User::query()->pluck('_id', '_id');
-        $this->assertInstanceOf(Illuminate\Support\Collection::class, $result);
+        $this->assertInstanceOf(\Illuminate\Support\Collection::class, $result);
         $this->assertGreaterThan(0, $result->count());
         foreach ($result as $key => $value) {
             $this->assertEquals($key, $value);

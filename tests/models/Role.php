@@ -1,4 +1,5 @@
 <?php
+namespace Fieldstone\Couchbase\Test\Model;
 
 use Fieldstone\Couchbase\Eloquent\Model as CBModel;
 

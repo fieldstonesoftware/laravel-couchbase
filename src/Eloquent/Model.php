@@ -35,6 +35,13 @@ class Model extends BaseModel
     protected $keyType = 'string';
 
     /**
+     * Our keys do not increment
+     *
+     * @var bool
+     */
+    public $incrementing = false;
+
+    /**
      * The parent relation instance.
      * @var Relation
      */
@@ -232,8 +239,10 @@ class Model extends BaseModel
         }
 
         // Dot notation support.
-        if (Str::contains($key, '.') && in_array($key, $this->attributes)) {
-            return $this->getAttributeValue($key);
+        if(Str::contains($key, '.')){
+            if(array_key_exists($key, Arr::dot($this->attributes))){
+                return $this->getAttributeValue($key);
+            }
         }
 
         // This checks for embedded relation support.
@@ -272,8 +281,14 @@ class Model extends BaseModel
      */
     public function setAttribute($key, $value)
     {
-        if ($key === $this->primaryKey && $key !== '_id') {
-            $key = '_id';
+        if ($key === $this->primaryKey) {
+            if ($key !== '_id') $key = '_id';
+
+            // convert to string if its an int
+            // Couchbase does not like an integer _id
+            if(is_int($value)){
+                $value = strval($value);
+            }
         }
 
         // Support keys in dot notation.
@@ -580,10 +595,12 @@ class Model extends BaseModel
      */
     public function performInsert(\Illuminate\Database\Eloquent\Builder $query)
     {
-        // set the document ID
-        $this->setAttribute($this->getKeyName()
-            , $this->getNewKeyValue($this->getDocumentType(), $this->getTenantId())
-        );
+        // If it is not set, set the document ID
+        if(!isset($this->attributes['_id'])){
+            $this->setAttribute($this->getKeyName()
+                , $this->getNewKeyValue($this->getDocumentType(), $this->getTenantId())
+            );
+        }
 
         // set document type
         $this->setAttribute($this->getDocumentTypeKeyName(), $this->getDocumentType());

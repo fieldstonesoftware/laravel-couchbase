@@ -433,41 +433,45 @@ class Builder extends IlluminateQueryBuilder
      * @throws Exception
      * @throws \Exception
      */
-    public function insert(array $values)
+    public function insert(array $documents)
     {
         // Since every insert gets treated like a batch insert, we will make sure the
         // bindings are structured in a way that is convenient when building these
         // inserts statements by verifying these elements are actually an array.
-        if (empty($values)) {
+        if (empty($documents)) {
             return true;
         }
 
         // Force values to an array
-        if (! is_array(reset($values))) {
-            $values = [$values];
+        if (! is_array(reset($documents))) {
+            $documents = [$documents];
         }
 
-        $result = null;
-
         // insert each document
-        foreach ($values as $value) {
+        foreach ($documents as $document) {
             $id = '';
             // if no id or _id is specified, generate one
-            if(!isset($value['id']) && !isset($value['_id'])){
+            if(!isset($document['_id'])){
                 $id = KeyId::GetNewId($this->sType, $this->sTenantId);
             }else{ // otherwise honor what is provided
-                if(isset($value['_id'])){
-                    $id = $value['_id'];
-                    unset($value['_id']);
-                }
-                if(isset($value['id'])){
-                    $id = $value['id'];
-                    unset($value['id']);
+                if(isset($document['_id'])){
+                    $id = $document['_id'];
+                    unset($document['_id']);
                 }
             }
 
+            // set the tenant id if not set
+            if(!isset($document[$this->sTenantIdKey])){
+                $document[$this->sTenantIdKey] = $this->sTenantId;
+            }
+
+            // set the type if not set
+            if(!isset($document[$this->sDocTypeKey])){
+                $document[$this->sDocTypeKey] = $this->sType;
+            }
+
             $result = $this->connection->getCouchbaseBucket()->upsert(
-                $id, QueryGrammar::removeMissingValue($value)
+                $id, QueryGrammar::removeMissingValue($document)
             );
         }
 

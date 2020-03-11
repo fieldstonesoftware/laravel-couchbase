@@ -16,6 +16,6 @@ class Item extends CBModel
 
     public function scopeSharp($query)
     {
-        return $query->where('type', 'sharp');
+        return $query->where('category', 'sharp');
     }
 }
