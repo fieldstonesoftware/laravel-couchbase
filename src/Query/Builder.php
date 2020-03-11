@@ -3,16 +3,17 @@
 namespace Fieldstone\Couchbase\Query;
 
 use Couchbase\Exception;
+use Fieldstone\Couchbase\KeyId;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\ConnectionInterface;
-use Illuminate\Database\Query\Builder as BaseBuilder;
+use Illuminate\Database\Query\Builder as IlluminateQueryBuilder;
 use Illuminate\Database\Query\Expression;
-use Illuminate\Database\Query\Grammars\Grammar as BaseGrammar;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
+use Fieldstone\Couchbase\Query\Grammar as QueryGrammar;
 use Fieldstone\Couchbase\Connection;
 
-class Builder extends BaseBuilder
+class Builder extends IlluminateQueryBuilder
 {
 
     /**
@@ -99,6 +100,7 @@ class Builder extends BaseBuilder
      * @var string
      */
     public $sDocTypeKey;
+    public $sType;  // type of document
 
     /**
      * The field in the document that indicates which tenant
@@ -106,33 +108,37 @@ class Builder extends BaseBuilder
      * @var string
      */
     public $sTenantIdKey;
+    public $sTenantId = '!';  // the tenant ID - default to ! public
 
     /**
      * Create a new query builder instance.
      *
      * @param ConnectionInterface $connection
-     * @param BaseGrammar $grammar
-     * @param \Illuminate\Database\Query\Processors\Processor|null $processor
+     * @param QueryGrammar $grammar
+     * @param Processor $processor
      * @throws \Exception
      */
     public function __construct(
         ConnectionInterface $connection,
-        BaseGrammar $grammar = null,
+        QueryGrammar $grammar = null,
         Processor $processor = null
     ) {
         if(!($connection instanceof Connection)) {
-            throw new \Exception('Argument 1 passed to '.get_class($this).'::__construct() must be an instance of '.Connection::class.', instance of '.get_class($connection).' given.');
+            throw new \Exception('Argument 1 passed to '.get_class($this).'::__construct() must be an instance of '
+                .Connection::class.', instance of '.get_class($connection).' given.');
         }
-        if(!($grammar === null || $grammar instanceof Grammar)) {
-            throw new \Exception('Argument 2 passed to '.get_class($this).'::__construct() must be an instance of '.Grammar::class.', instance of '.get_class($grammar).' given.');
+        if(!($grammar === null || $grammar instanceof QueryGrammar)) {
+            throw new \Exception('Argument 2 passed to '.get_class($this).'::__construct() must be an instance of '
+                .QueryGrammar::class.', instance of '.get_class($grammar).' given.');
         }
+
+        parent::__construct($connection, $grammar, $processor);
 
         $config = $connection->getConfig();
         $this->sDocTypeKey = isset($config['doctype_key']) ? $config['doctype_key'] : 'type';
         $this->sTenantIdKey = isset($config['tenant_id_key']) ? $config['tenant_id_key'] : 'tenant_id';
-
-        parent::__construct($connection, $grammar, $processor);
         $this->useCollections = $this->shouldUseCollections();
+
         $this->returning([$this->connection->getDefaultBucketName() . '.*']);
     }
 
@@ -160,7 +166,7 @@ class Builder extends BaseBuilder
      * @return $this
      * @throws Exception
      */
-    public function useIndex($name, $type = Grammar::INDEX_TYPE_GSI)
+    public function useIndex($name, $type = QueryGrammar::INDEX_TYPE_GSI)
     {
         if ($this->keys !== null) {
             throw new Exception('Only one of useKeys or useIndex can be used, not both.');
@@ -201,18 +207,23 @@ class Builder extends BaseBuilder
     }
 
     /**
-     * Set the table which the query is targeting.
+     * Set the type which the query is targeting.
      * @param  string $type
      * @return $this
      */
     public function from($type)
     {
-        // the "table" name is actually the bucket name for Couchbase
+        // the "table" name (from) is actually the bucket name for Couchbase
         $this->from = $this->connection->getDefaultBucketName();
+
+        // from turns into a 2 part filter - bucket and document type
+        $this->sType = $type;
 
         // Additionally, we add a where clause for the document type using
         // the configuration specified document type key (the field name in the doc)
-        $this->where($this->sDocTypeKey, $type);
+        if(!is_null($type)){
+            $this->where($this->sDocTypeKey, $type);
+        }
 
         return $this;
     }
@@ -315,7 +326,8 @@ class Builder extends BaseBuilder
     {
         $key = [
             'bucket' => $this->from,
-            'type' => $this->type,
+            'type' => $this->sType,
+            'tenant' => $this->sTenantId,
             'wheres' => $this->wheres,
             'columns' => $this->columns,
             'groups' => $this->groups,
@@ -353,7 +365,7 @@ class Builder extends BaseBuilder
      */
     public function exists()
     {
-        return !is_null($this->first([Grammar::VIRTUAL_META_ID_COLUMN]));
+        return !is_null($this->first([QueryGrammar::VIRTUAL_META_ID_COLUMN]));
     }
 
     /**
@@ -419,6 +431,7 @@ class Builder extends BaseBuilder
      * @param array $values
      * @return bool
      * @throws Exception
+     * @throws \Exception
      */
     public function insert(array $values)
     {
@@ -434,14 +447,31 @@ class Builder extends BaseBuilder
             $values = [$values];
         }
 
-        foreach ($values as &$value) {
-            $id = $value['_id'];
-            unset($value['_id']);
+        $result = null;
+
+        // insert each document
+        foreach ($values as $value) {
+            $id = '';
+            // if no id or _id is specified, generate one
+            if(!isset($value['id']) && !isset($value['_id'])){
+                $id = KeyId::GetNewId($this->sType, $this->sTenantId);
+            }else{ // otherwise honor what is provided
+                if(isset($value['_id'])){
+                    $id = $value['_id'];
+                    unset($value['_id']);
+                }
+                if(isset($value['id'])){
+                    $id = $value['id'];
+                    unset($value['id']);
+                }
+            }
+
             $result = $this->connection->getCouchbaseBucket()->upsert(
-                $id, Grammar::removeMissingValue($value)
+                $id, QueryGrammar::removeMissingValue($value)
             );
         }
 
+        // return the last result
         return $result;
     }
 
@@ -454,7 +484,7 @@ class Builder extends BaseBuilder
     {
         // replace MissingValue in 2nd or deeper levels
         foreach ($values as $key => $value) {
-            $values[$key] = Grammar::removeMissingValue($value);
+            $values[$key] = QueryGrammar::removeMissingValue($value);
         }
         return parent::update($values);
     }
@@ -613,9 +643,9 @@ class Builder extends BaseBuilder
     }
 
     /**
-     * @return BaseGrammar
+     * @return QueryGrammar
      */
-    public function getGrammar() : BaseGrammar
+    public function getGrammar() : QueryGrammar
     {
         return parent::getGrammar();
     }

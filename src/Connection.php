@@ -2,13 +2,13 @@
 
 namespace Fieldstone\Couchbase;
 
-use Couchbase\Bucket;
-use Couchbase\Cluster;
-use Couchbase\ClusterOptions;
-use Couchbase\QueryOptions;
-use Couchbase\QueryScanConsistency;
+use Couchbase\N1qlQuery;
+use Couchbase\PasswordAuthenticator;
+use CouchbaseBucket;
+use CouchbaseCluster;
 use Fieldstone\Couchbase\Events\QueryFired;
 use Fieldstone\Couchbase\Query\Builder as QueryBuilder;
+use Fieldstone\Couchbase\Schema\Grammar;
 
 class Connection extends \Illuminate\Database\Connection
 {
@@ -18,21 +18,16 @@ class Connection extends \Illuminate\Database\Connection
 
     /**
      * The Couchbase Cluster
-     * @var Cluster
+     * @var CouchbaseCluster
      */
-    protected $connection;
+    protected $connection = null;
 
     /**
      * The Couchbase Bucket
-     * @var Bucket
+     * @var CouchbaseBucket
      */
     protected $bucket;
 
-    /**
-     * The Couchbase Collection
-     * @var Bucket
-     */
-    protected $collection;
 
     /** @var string[] */
     protected $metrics;
@@ -56,10 +51,7 @@ class Connection extends \Illuminate\Database\Connection
         $this->connection = $this->createConnection($address, $config);
 
         // Set Bucket - Opens the Connection
-        $this->bucket = $this->connection->bucket($this->getDefaultBucketName());
-
-        // Set Collection
-        $this->collection = $this->bucket->defaultCollection();
+        $this->bucket = $this->connection->openBucket($this->getDefaultBucketName());
 
         $this->useDefaultQueryGrammar();
         $this->useDefaultPostProcessor();
@@ -85,6 +77,11 @@ class Connection extends \Illuminate\Database\Connection
     public function getDefaultBucketName()
     {
         return $this->config['bucket'];
+    }
+
+    public function getBucket()
+    {
+        return $this->bucket;
     }
 
     /**
@@ -131,13 +128,34 @@ class Connection extends \Illuminate\Database\Connection
     }
 
     /**
-     *
-     * @param $query
+     * @param string $n1ql
+     * @param array $bindings Positional Parameters
+     * @param int $scanConsistency
      * @return mixed
      */
-    protected function executeQuery($query)
-    {
-        return $this->bucket->query($query, true);
+    protected function runN1qlQuery(
+        $n1ql
+        , array $bindings
+        , int $scanConsistency = N1qlQuery::REQUEST_PLUS
+    ) {
+        $qry = N1qlQuery::fromString($n1ql);
+        $qry->consistency($scanConsistency);
+
+        if($bindings !== null && count($bindings) > 0){
+            $qry->positionalParams($bindings);
+        }
+
+        $fSuccess = false;
+        try {
+            $result = $this->bucket->query($qry);
+            $fSuccess = true;
+        } finally {
+            $this->logQueryFired($n1ql, [
+                'positionalParams' => $bindings,
+                'success' => $fSuccess
+            ]);
+        }
+        return $result;
     }
 
     /**
@@ -226,34 +244,6 @@ class Connection extends \Illuminate\Database\Connection
         });
     }
 
-    /**
-     * @param string $n1ql
-     * @param array $bindings Positional Parameters
-     * @param int $scanConsistency
-     * @return mixed
-     */
-    protected function runN1qlQuery($n1ql
-        , array $bindings
-        , $scanConsistency = QueryScanConsistency::NOT_BOUNDED
-    ) {
-        $options = new QueryOptions();
-        $options->positionalParameters($bindings);
-        $options->scanConsistency($scanConsistency);
-
-        $fSuccess = false;
-        try {
-            $result = $this->getCouchbaseBucket()->query($n1ql, $options);
-//            $result = $this->connection->query($n1ql, $options);
-            $fSuccess = true;
-        } finally {
-            $this->logQueryFired($n1ql, [
-                'consistency' => $scanConsistency,
-                'positionalParams' => $bindings,
-                'success' => $fSuccess
-            ]);
-        }
-        return $result;
-    }
 
     /**
      * @param string $query
@@ -301,17 +291,19 @@ class Connection extends \Illuminate\Database\Connection
     /**
      * Get the Couchbase bucket object.
      *
-     * @return Bucket
+     * @return CouchbaseBucket
      */
-    public function getCouchbaseBucket() : Bucket
+    public function getCouchbaseBucket() : CouchbaseBucket
     {
         return $this->bucket;
     }
 
     /**
      * Get the query grammar used by the connection.
+     *
+     * @return \Illuminate\Database\Query\Grammars\Grammar
      */
-    public function getQueryGrammar()
+    public function getQueryGrammar() : \Illuminate\Database\Query\Grammars\Grammar
     {
         return $this->queryGrammar;
     }
@@ -319,9 +311,9 @@ class Connection extends \Illuminate\Database\Connection
     /**
      * return Cluster object.
      *
-     * @return Cluster
+     * @return CouchbaseCluster
      */
-    public function getCouchbaseCluster()
+    public function getCouchbaseCluster() : CouchbaseCluster
     {
         return $this->connection;
     }
@@ -331,16 +323,21 @@ class Connection extends \Illuminate\Database\Connection
      *
      * @param $address
      * @param array $config
-     * @return Cluster
+     * @return CouchbaseCluster
      */
     protected function createConnection($address, array $config)
     {
-        $options = new ClusterOptions();
+        $authenticator = new PasswordAuthenticator();
+
         if (!empty($config['username']) && !empty($config['password'])) {
-            $options->credentials(strval($config['username']), strval($config['password']));
+            $authenticator->username(strval($config['username']))
+                ->password(strval($config['password']));
         }
 
-        return new Cluster($address, $options);
+        $cluster = new CouchbaseCluster($address);
+        $cluster->authenticate($authenticator);
+
+        return $cluster;
     }
 
     /**
@@ -406,11 +403,11 @@ class Connection extends \Illuminate\Database\Connection
     /**
      * Get the default schema grammar instance.
      *
-     * @return Query\Grammar
+     * @return Grammar
      */
     protected function getDefaultQueryGrammar()
     {
-        return new Query\Grammar();
+        return new Grammar();
     }
 
     /**
