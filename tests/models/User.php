@@ -59,12 +59,12 @@ class User extends CBModel implements AuthenticatableContract, CanResetPasswordC
 
     public function addresses()
     {
-        return $this->embedsMany('Address');
+        return $this->embedsMany(Address::class);
     }
 
     public function father()
     {
-        return $this->embedsOne('User');
+        return $this->embedsOne(User::class);
     }
 
     public function getDateFormat()

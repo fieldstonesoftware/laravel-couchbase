@@ -13,10 +13,11 @@
     <testsuites>
         <testsuite name="all">
             <file>tests/ConnectionTest.php</file>
-            <file>tests/ArgsParametersTest.php</file>
             <file>tests/AuthTest.php</file>
             <file>tests/QueryTest.php</file>
             <file>tests/ModelTest.php</file>
+            <file>tests/ArgsParametersTest.php</file>
+            <file>tests/EmbeddedRelationsTest.php</file>
         </testsuite>
     </testsuites>
     <filter>

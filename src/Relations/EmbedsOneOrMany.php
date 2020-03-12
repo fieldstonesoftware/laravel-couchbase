@@ -34,8 +34,8 @@ abstract class EmbedsOneOrMany extends Relation
      * Create a new embeds many relationship instance.
      *
      * @param  \Illuminate\Database\Eloquent\Builder $query
-     * @param  \Illuminate\Database\Eloquent\Model $parent
-     * @param  \Illuminate\Database\Eloquent\Model $related
+     * @param Model $parent
+     * @param Model $related
      * @param  string $localKey
      * @param  string $foreignKey
      * @param  string $relation
@@ -81,7 +81,7 @@ abstract class EmbedsOneOrMany extends Relation
      * Match the eagerly loaded results to their parents.
      *
      * @param  array $models
-     * @param  \Illuminate\Database\Eloquent\Collection $results
+     * @param Collection $results
      * @param  string $relation
      * @return array
      */
@@ -101,9 +101,9 @@ abstract class EmbedsOneOrMany extends Relation
     /**
      * Shorthand to get the results of the relationship.
      *
-     * @return \Illuminate\Database\Eloquent\Collection
+     * @return Collection
      */
-    public function get()
+    public function get($columns = ['*'])
     {
         return $this->getResults();
     }
@@ -113,7 +113,7 @@ abstract class EmbedsOneOrMany extends Relation
      *
      * @return int
      */
-    public function count()
+    public function count($columns = ['*'])
     {
         return count($this->getEmbedded());
     }
@@ -121,8 +121,8 @@ abstract class EmbedsOneOrMany extends Relation
     /**
      * Attach a model instance to the parent model.
      *
-     * @param  \Illuminate\Database\Eloquent\Model $model
-     * @return \Illuminate\Database\Eloquent\Model
+     * @param Model $model
+     * @return bool|Model
      */
     public function save(Model $model)
     {
@@ -134,8 +134,8 @@ abstract class EmbedsOneOrMany extends Relation
     /**
      * Attach a collection of models to the parent instance.
      *
-     * @param  \Illuminate\Database\Eloquent\Collection|array $models
-     * @return \Illuminate\Database\Eloquent\Collection|array
+     * @param Collection|array $models
+     * @return Collection|array
      */
     public function saveMany($models)
     {
@@ -150,9 +150,9 @@ abstract class EmbedsOneOrMany extends Relation
      * Create a new instance of the related model.
      *
      * @param  array $attributes
-     * @return \Illuminate\Database\Eloquent\Model
+     * @return Model
      */
-    public function create(array $attributes)
+    public function create(array $attributes = [])
     {
         // Here we will set the raw attributes to avoid hitting the "fill" method so
         // that we do not have to worry about a mass accessor rules blocking sets
@@ -228,7 +228,7 @@ abstract class EmbedsOneOrMany extends Relation
      * Set the embedded records array.
      *
      * @param  array $records
-     * @return \Illuminate\Database\Eloquent\Model
+     * @return Model
      */
     protected function setEmbedded($records)
     {
@@ -262,8 +262,8 @@ abstract class EmbedsOneOrMany extends Relation
     /**
      * Convert an array of records to a Collection.
      *
-     * @param  array $records
-     * @return \Fieldstone\Couchbase\Eloquent\Collection
+     * @param array $records
+     * @return Collection
      */
     protected function toCollection(array $records = [])
     {
@@ -284,12 +284,12 @@ abstract class EmbedsOneOrMany extends Relation
      * Create a related model instanced.
      *
      * @param  array $attributes
-     * @return \Illuminate\Database\Eloquent\Model
+     * @return Model
      */
     protected function toModel($attributes = [])
     {
         if (is_null($attributes)) {
-            return;
+            return null;
         }
 
         $model = $this->related->newFromBuilder((array)$attributes);

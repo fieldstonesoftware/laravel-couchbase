@@ -121,14 +121,12 @@ class Model extends BaseModel
     /**
      * Get the primary key for the model.
      *
-     * @param null $type Document Type, Defaults to Snake Case Model Name
-     * @param null $tenantId Tenant ID, Default to * (all tenants)
      * @return string
      * @throws \Exception if something goes wrong with generating a UUID
      */
-    public function getNewKeyValue($type, $tenantId)
+    public function getNewKeyValue()
     {
-        return KeyId::getNewId($type, $tenantId);
+        return KeyId::getNewId($this->getDocumentType(), $this->getTenantId());
     }
 
     /**
@@ -597,9 +595,7 @@ class Model extends BaseModel
     {
         // If it is not set, set the document ID
         if(!isset($this->attributes['_id'])){
-            $this->setAttribute($this->getKeyName()
-                , $this->getNewKeyValue($this->getDocumentType(), $this->getTenantId())
-            );
+            $this->setAttribute($this->getKeyName(), $this->getNewKeyValue());
         }
 
         // set document type

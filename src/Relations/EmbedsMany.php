@@ -38,15 +38,15 @@ class EmbedsMany extends EmbedsOneOrMany
     /**
      * Save a new model and attach it to the parent model.
      *
-     * @param  \Illuminate\Database\Eloquent\Model $model
-     * @return \Illuminate\Database\Eloquent\Model
+     * @param Model $model
+     * @return Model
      */
     public function performInsert(Model $model)
     {
         // Generate a new key if needed.
 
         if ($model->getKeyName() == '_id' and !$model->getKey()) {
-            $model->setAttribute('_id', Helper::getUniqueId($model->{Helper::TYPE_NAME}));
+            $model->setAttribute('_id', $model->getNewKeyValue());
         }
         // For deeply nested documents, let the parent handle the changes.
         if ($this->isNested()) {
@@ -69,7 +69,7 @@ class EmbedsMany extends EmbedsOneOrMany
     /**
      * Save an existing model and attach it to the parent model.
      *
-     * @param  \Illuminate\Database\Eloquent\Model $model
+     * @param Model $model
      * @return Model|bool
      */
     public function performUpdate(Model $model)
@@ -135,8 +135,8 @@ class EmbedsMany extends EmbedsOneOrMany
     /**
      * Associate the model instance to the given parent, without saving it to the database.
      *
-     * @param  \Illuminate\Database\Eloquent\Model $model
-     * @return \Illuminate\Database\Eloquent\Model
+     * @param Model $model
+     * @return Model
      */
     public function associate(Model $model)
     {
@@ -232,8 +232,8 @@ class EmbedsMany extends EmbedsOneOrMany
     /**
      * Save alias.
      *
-     * @param  \Illuminate\Database\Eloquent\Model $model
-     * @return \Illuminate\Database\Eloquent\Model
+     * @param Model $model
+     * @return Model
      */
     public function attach(Model $model)
     {
@@ -243,14 +243,14 @@ class EmbedsMany extends EmbedsOneOrMany
     /**
      * Associate a new model instance to the given parent, without saving it to the database.
      *
-     * @param  \Illuminate\Database\Eloquent\Model $model
-     * @return \Illuminate\Database\Eloquent\Model
+     * @param Model $model
+     * @return Model
      */
     protected function associateNew($model)
     {
         // Create a new key if needed.
         if (!$model->getAttribute('_id')) {
-            $model->setAttribute('_id', Helper::getUniqueId($model->{Helper::TYPE_NAME}));
+            $model->setAttribute('_id', $model->getNewKeyValue());
         }
 
         $records = $this->getEmbedded();
@@ -264,8 +264,8 @@ class EmbedsMany extends EmbedsOneOrMany
     /**
      * Associate an existing model instance to the given parent, without saving it to the database.
      *
-     * @param  \Illuminate\Database\Eloquent\Model $model
-     * @return \Illuminate\Database\Eloquent\Model
+     * @param Model $model
+     * @return Model
      */
     protected function associateExisting($model)
     {
