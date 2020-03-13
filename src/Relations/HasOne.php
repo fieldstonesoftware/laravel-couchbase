@@ -53,23 +53,6 @@ class HasOne extends EloquentHasOne
     }
 
     /**
-     * Add the constraints for a relationship query.
-     *
-     * @param  \Illuminate\Database\Eloquent\Builder $query
-     * @param  \Illuminate\Database\Eloquent\Builder $parent
-     * @param  array|mixed $columns
-     * @return \Illuminate\Database\Eloquent\Builder
-     */
-    public function getRelationQuery(Builder $query, Builder $parent, $columns = ['*'])
-    {
-        $query->select($columns);
-
-        $key = $this->wrap($this->getQualifiedParentKeyName());
-
-        return $query->whereNotNull($this->getHasCompareKey());
-    }
-
-    /**
      * @inheritdoc
      */
     public function getRelationExistenceQuery(Builder $query, Builder $parentQuery, $columns = ['*'])
@@ -87,15 +70,5 @@ class HasOne extends EloquentHasOne
     public function getForeignKeyName()
     {
         return $this->foreignKey;
-    }
-
-    /**
-     * Get the plain foreign key.
-     *
-     * @return string
-     */
-    public function getPlainForeignKey()
-    {
-        return $this->getForeignKey();
     }
 }

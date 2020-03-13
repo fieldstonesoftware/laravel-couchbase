@@ -18,6 +18,16 @@
             <file>tests/ModelTest.php</file>
             <file>tests/ArgsParametersTest.php</file>
             <file>tests/EmbeddedRelationsTest.php</file>
+            <file>tests/QueryBuilderTest.php</file>
+
+<!--            <file>tests/PaginationTest.php</file>-->
+
+<!--            Investigate-->
+<!--            <file>tests/InlineParametersTest.php</file>-->
+
+<!--            Failing and Needs Work-->
+<!--            Hybrid Relations needs review-->
+<!--            <file>tests/MysqlRelationsTest.php</file>-->
         </testsuite>
     </testsuites>
     <filter>

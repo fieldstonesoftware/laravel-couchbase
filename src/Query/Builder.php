@@ -2,6 +2,7 @@
 
 namespace Fieldstone\Couchbase\Query;
 
+use Couchbase\Document;
 use Couchbase\Exception;
 use Fieldstone\Couchbase\KeyId;
 use Illuminate\Contracts\Support\Arrayable;
@@ -54,7 +55,7 @@ class Builder extends IlluminateQueryBuilder
      */
     public $operators = [
         '=', '<', '>', '<=', '>=', '<>', '!=', 'like', 'not like', 'between', 'ilike', '&', '|', '^', '<<', '>>',
-        'rlike', 'regexp', 'not regexp', 'exists', 'type', 'mod', 'where', 'all', 'size', 'regex', 'text', 'slice',
+        'rlike', 'regexp', 'not regexp', 'exists', 'mod', 'where', 'all', 'size', 'regex', 'text', 'slice',
         'elemmatch', 'geowithin', 'geointersects', 'near', 'nearsphere', 'geometry', 'maxdistance', 'center',
         'centersphere', 'box', 'polygon', 'uniquedocs'
     ];
@@ -66,12 +67,6 @@ class Builder extends IlluminateQueryBuilder
     protected $conversion = [
         '=' => '=', '!=' => '$ne', '<>' => '$ne', '<' => '$lt', '<=' => '$lte', '>' => '$gt', '>=' => '$gte'
     ];
-
-    /**
-     * Check if we need to return Collections instead of plain arrays (laravel >= 5.3 )
-     * @var boolean
-     */
-    protected $useCollections;
 
     /**
      * Keys used via 'USE KEYS'
@@ -134,10 +129,11 @@ class Builder extends IlluminateQueryBuilder
 
         parent::__construct($connection, $grammar, $processor);
 
-        $config = $connection->getConfig();
-        $this->sDocTypeKey = isset($config['doctype_key']) ? $config['doctype_key'] : 'type';
-        $this->sTenantIdKey = isset($config['tenant_id_key']) ? $config['tenant_id_key'] : 'tenant_id';
-        $this->useCollections = $this->shouldUseCollections();
+        $this->sDocTypeKey = config('couchbase.type_key','doc_type');
+        $this->sTenantIdKey = config('couchbase.tenant_id_key','tenant_id');
+
+        // add the type key to the operator list
+        array_push($this->operators, $this->sDocTypeKey);
 
         $this->returning([$this->connection->getDefaultBucketName() . '.*']);
     }
@@ -191,23 +187,10 @@ class Builder extends IlluminateQueryBuilder
     }
 
     /**
-     * Returns true if Laravel or Lumen >= 5.3
-     * @return bool
-     */
-    protected function shouldUseCollections()
-    {
-        if (function_exists('app')) {
-            $version = app()->version();
-            $version = filter_var(explode(')', $version)[0],
-                FILTER_SANITIZE_NUMBER_FLOAT,
-                FILTER_FLAG_ALLOW_FRACTION); // lumen
-            return version_compare($version, '5.3', '>=');
-        }
-        return false;
-    }
-
-    /**
-     * Set the type which the query is targeting.
+     * Set the type of document we're looking for. This is the equivalent to a table
+     * name in an RDBMS. In Couchbase, we don't have tables - we have documents
+     * with types. The default Bucket is used to pull from.
+     *
      * @param  string $type
      * @return $this
      */
@@ -216,7 +199,7 @@ class Builder extends IlluminateQueryBuilder
         // the "table" name (from) is actually the bucket name for Couchbase
         $this->from = $this->connection->getDefaultBucketName();
 
-        // from turns into a 2 part filter - bucket and document type
+        // Set the document type
         $this->sType = $type;
 
         // Additionally, we add a where clause for the document type using
@@ -253,7 +236,19 @@ class Builder extends IlluminateQueryBuilder
 
     /**
      * Execute the query as a "select" statement.
-     * @param  array $columns
+     *
+     * @param array $columns
+     * @return Collection
+     */
+    public function get($columns = ['*'])
+    {
+        return $this->getWithMeta($columns)->rows;
+    }
+
+    /**
+     * Execute the query as a "select" statement.
+     * Include the query meta data in the return with the results
+     * @param array $columns
      * @return \stdClass
      */
     public function getWithMeta($columns = ['*'])
@@ -269,12 +264,7 @@ class Builder extends IlluminateQueryBuilder
         $results = $processor->processSelectWithMeta($this, $this->runSelectWithMeta());
 
         $this->columns = $original;
-
-        if (isset($results->rows)) {
-            $results->rows = collect($results->rows);
-        } else {
-            $results->rows = collect();
-        }
+        $results->rows = isset($results->rows) ? collect($results->rows) : collect();
 
         return $results;
     }
@@ -326,7 +316,7 @@ class Builder extends IlluminateQueryBuilder
     {
         $key = [
             'bucket' => $this->from,
-            'type' => $this->sType,
+            $this->sDocTypeKey => $this->sType,
             'tenant' => $this->sTenantId,
             'wheres' => $this->wheres,
             'columns' => $this->columns,
@@ -398,7 +388,8 @@ class Builder extends IlluminateQueryBuilder
      */
     public function setBindings(array $bindings, $type = 'where')
     {
-        return parent::setBindings($bindings, $type);
+        parent::setBindings($bindings, $type);
+        return $this;
     }
 
     /**
@@ -410,7 +401,8 @@ class Builder extends IlluminateQueryBuilder
      */
     public function addBinding($value, $type = 'where')
     {
-        return parent::addBinding($value, $type);
+        parent::addBinding($value, $type);
+        return $this;
     }
 
     /**
@@ -427,56 +419,72 @@ class Builder extends IlluminateQueryBuilder
     }
 
     /**
-     * Insert a new record into the database.
-     * @param array $values
-     * @return bool
-     * @throws Exception
+     * Insert a new document into the database. Pass the contents of the document.
+     * We have no way to distinguish between a single or multiple documents being
+     * inserted by the values being passed so we always great values as a single
+     * document content.
+     *
+     * @param array $document
+     * @return string|null ID of the inserted document
      * @throws \Exception
      */
-    public function insert(array $documents)
+    public function insert(array $document)
     {
-        // Since every insert gets treated like a batch insert, we will make sure the
-        // bindings are structured in a way that is convenient when building these
-        // inserts statements by verifying these elements are actually an array.
-        if (empty($documents)) {
+        if (empty($document)) {
             return true;
         }
 
-        // Force values to an array
-        if (! is_array(reset($documents))) {
-            $documents = [$documents];
+        // id is stored outside the document
+        $id = '';
+
+        // properly populate the id, tenant, type
+        $this->prepareDocumentForSave($id, $document);
+
+        // insert the document
+        $result = $this->connection->getCouchbaseBucket()->upsert(
+            $id, QueryGrammar::removeMissingValue($document)
+        );
+
+        if(is_null($result->error)){
+            return $id;
         }
 
-        // insert each document
-        foreach ($documents as $document) {
-            $id = '';
-            // if no id or _id is specified, generate one
-            if(!isset($document['_id'])){
-                $id = KeyId::GetNewId($this->sType, $this->sTenantId);
-            }else{ // otherwise honor what is provided
-                if(isset($document['_id'])){
-                    $id = $document['_id'];
-                    unset($document['_id']);
-                }
-            }
+        return null;
+    }
 
-            // set the tenant id if not set
-            if(!isset($document[$this->sTenantIdKey])){
-                $document[$this->sTenantIdKey] = $this->sTenantId;
+    /**
+     * If the document includes an id or _id field, return that in docId.
+     * Otherwise, generate a new ID and return that in docId
+     * Set the tenant ID and type fields in the document if not set.
+     * @param $document
+     * @throws \Exception
+     */
+    private function prepareDocumentForSave(&$docId, &$document)
+    {
+        // Prepare a document ID if the document does not have one
+        // if no id or _id is specified, generate one
+        // unset the ID value within the document - it gets stored separately in CB
+        if(!isset($document['_id']) && !isset($document['id'])){
+            $docId = KeyId::GetNewId($this->sType, $this->sTenantId);
+        }else{ // otherwise honor what is provided
+            if(isset($document['_id'])){
+                $docId = $document['_id'];
+                unset($document['_id']);
+            }elseif(isset($document['id'])){
+                $docId = $document['id'];
+                unset($document['id']);
             }
-
-            // set the type if not set
-            if(!isset($document[$this->sDocTypeKey])){
-                $document[$this->sDocTypeKey] = $this->sType;
-            }
-
-            $result = $this->connection->getCouchbaseBucket()->upsert(
-                $id, QueryGrammar::removeMissingValue($document)
-            );
         }
 
-        // return the last result
-        return $result;
+        // set the tenant id if not set
+        if(!isset($document[$this->sTenantIdKey])){
+            $document[$this->sTenantIdKey] = $this->sTenantId;
+        }
+
+        // set the type if not set
+        if(!isset($document[$this->sDocTypeKey])){
+            $document[$this->sDocTypeKey] = $this->sType;
+        }
     }
 
     /**
@@ -495,27 +503,21 @@ class Builder extends IlluminateQueryBuilder
 
     /**
      * Insert a new record and get the value of the primary key.
-     * @param array $values
-     * @param string $sequence
+     * @param array $document
+     * @param null $sequence NOT USED
      * @return int
-     * @throws Exception if there is a problem generating UUIDs
+     * @throws \Exception
      */
-    public function insertGetId(array $values, $sequence = null)
+    public function insertGetId(array $document, $sequence = null)
     {
-        if (!is_null($sequence) && isset($values[$sequence])) {
-            $this->useKeys((string)$values[$sequence]);
-        } elseif (isset($values['_id'])) {
-            $this->useKeys((string)$values['_id']);
-        }
-        $this->insert($values);
-        return $this->keys;
+        return $this->insert($document);
     }
 
     /**
      * Get an array with the values of a given column.
      * @param  string $column
      * @param  string|null $key
-     * @return \Illuminate\Support\Collection
+     * @return Collection
      */
     public function pluck($column, $key = null)
     {
@@ -529,8 +531,7 @@ class Builder extends IlluminateQueryBuilder
             });
         }
 
-        $p = Arr::pluck($results, $column, $key);
-        return $this->useCollections ? new Collection($p) : $p;
+        return $results->pluck($column, $key);
     }
 
     /**
@@ -547,7 +548,7 @@ class Builder extends IlluminateQueryBuilder
      * @param  mixed $value
      * @param bool $unique
      *
-     * @return array|\Couchbase\Document
+     * @return array|Document
      */
     public function push($column, $value = null, $unique = false)
     {
@@ -572,7 +573,7 @@ class Builder extends IlluminateQueryBuilder
      * Remove one or more values from an array.
      * @param  mixed $column
      * @param  mixed $value
-     * @return array|\Couchbase\Document|null
+     * @return array|Document|null
      * @throws Exception
      */
     public function pull($column, $value = null)
@@ -670,11 +671,13 @@ class Builder extends IlluminateQueryBuilder
      */
     protected function runSelectWithMeta()
     {
-        return $this->connection->selectWithMeta(
+        $res = $this->connection->selectWithMeta(
             $this->toSql(),
             $this->getBindings(),
             !$this->useWritePdo
         );
+
+        return $res;
     }
 
     /**
@@ -714,7 +717,7 @@ class Builder extends IlluminateQueryBuilder
      */
     public function where($column, $operator = null, $value = null, $boolean = 'and')
     {
-        if ($column === '_id') {
+        if ($column === '_id' || $column === 'id') {
             $column = $this->grammar->getMetaIdExpression($this);
         }
         return parent::where($column, $operator, $value, $boolean);
@@ -745,7 +748,7 @@ class Builder extends IlluminateQueryBuilder
      */
     public function whereNull($column, $boolean = 'and', $not = false)
     {
-        if ($column === '_id') {
+        if ($column === '_id' || $column === 'id') {
             if ($not) {
                 // the meta().id of a document is never null
                 // so where condition "meta().id is not null" makes no changes to the result

@@ -6,6 +6,7 @@ use Fieldstone\Couchbase\Test\Model\Book;
 use Fieldstone\Couchbase\Test\Model\Item;
 use Fieldstone\Couchbase\Test\Model\User;
 use Fieldstone\Couchbase\Test\Model\Soft;
+use Illuminate\Support\Arr;
 
 class ModelTest extends TestCase
 {
@@ -177,10 +178,8 @@ class ModelTest extends TestCase
 
     public function testGet()
     {
-        User::insert([
-            ['name' => 'John Doe'],
-            ['name' => 'Jane Doe'],
-        ]);
+        User::insert(['name' => 'John Doe']);
+        User::insert(['name' => 'Jane Doe']);
 
         $users = User::get();
         $this->assertEquals(2, $users->count());
@@ -190,10 +189,8 @@ class ModelTest extends TestCase
 
     public function testFirst()
     {
-        User::insert([
-            ['name' => 'John Doe'],
-            ['name' => 'Jane Doe'],
-        ]);
+        User::insert(['name' => 'John Doe']);
+        User::insert(['name' => 'Jane Doe']);
 
         $user = User::first();
         $this->assertInstanceOf('Fieldstone\Couchbase\Eloquent\Model', $user);
@@ -303,17 +300,16 @@ class ModelTest extends TestCase
         $this->assertEquals('_id', $user->getKeyName());
 
         $book = new Book;
-        $this->assertEquals('title', $book->getKeyName());
+        $this->assertEquals('_id', $book->getKeyName());
 
         $book->title = 'A Game of Thrones';
         $book->author = 'George R. R. Martin';
         $book->save();
 
-        $this->assertEquals('A Game of Thrones', $book->getKey());
-
-        $check = Book::find('A Game of Thrones');
-        $this->assertEquals('title', $check->getKeyName());
-        $this->assertEquals('A Game of Thrones', $check->getKey());
+        $bookId = $book->getKey();
+        $check = Book::find($bookId);
+        $this->assertEquals('_id', $check->getKeyName());
+        $this->assertEquals($bookId, $check->getKey());
         $this->assertEquals('A Game of Thrones', $check->title);
     }
 
@@ -327,60 +323,24 @@ class ModelTest extends TestCase
         $book->save();
 
         $book = new Book;
-        $this->assertEquals('title', $book->getKeyName());
+        $this->assertEquals('_id', $book->getKeyName());
 
         $book->title = 'A Game of Thrones Where';
         $book->author = 'George R. R. Martin Where';
         $book->save();
 
-        $this->assertEquals('A Game of Thrones Where', $book->getKey());
+        $bookId = $book->getKey();
 
-        $check = Book::where('_id', 'A Game of Thrones Where')->first();
-        $this->assertEquals('title', $check->getKeyName());
-        $this->assertEquals('A Game of Thrones Where', $check->getKey());
-        $this->assertEquals('A Game of Thrones Where', $check->title);
-
-        $check = Book::where('title', 'A Game of Thrones Where')->first();
-        $this->assertEquals('title', $check->getKeyName());
-        $this->assertEquals('A Game of Thrones Where', $check->getKey());
-        $this->assertEquals('A Game of Thrones Where', $check->title);
-    }
-
-    /**
-     * @group testPrimaryKeyUsingWhere
-     */
-    public function testPrimaryKeyUsingUseKeys()
-    {
-        $book = new Book;
-        $book->title = 'False Book';
-        $book->save();
-
-        $book = new Book;
-        $this->assertEquals('title', $book->getKeyName());
-
-        $book->title = 'A Game of Thrones Where';
-        $book->author = 'George R. R. Martin Where';
-        $book->save();
-
-        $this->assertEquals('A Game of Thrones Where', $book->getKey());
-
-        $check = Book::useKeys('A Game of Thrones Where')->first();
-        $this->assertEquals('title', $check->getKeyName());
-        $this->assertEquals('A Game of Thrones Where', $check->getKey());
-        $this->assertEquals('A Game of Thrones Where', $check->title);
-
-        $check = Book::where('title', 'A Game of Thrones Where')->first();
-        $this->assertEquals('title', $check->getKeyName());
-        $this->assertEquals('A Game of Thrones Where', $check->getKey());
+        $check = Book::where('_id', $bookId)->first();
+        $this->assertEquals('_id', $check->getKeyName());
+        $this->assertEquals($bookId, $check->getKey());
         $this->assertEquals('A Game of Thrones Where', $check->title);
     }
 
     public function testScope()
     {
-        Item::insert([
-            ['name' => 'knife', 'category' => 'sharp'],
-            ['name' => 'spoon', 'category' => 'round'],
-        ]);
+        Item::insert(['name' => 'knife', 'category' => 'sharp']);
+        Item::insert(['name' => 'spoon', 'category' => 'round']);
 
         $sharp = Item::sharp()->get();
         $this->assertEquals(1, $sharp->count());
@@ -389,18 +349,25 @@ class ModelTest extends TestCase
     public function testToArray()
     {
         $item = Item::create(['name' => 'fork', 'category' => 'sharp']);
+        $docTypeKey = config('couchbase.type_key');
+        $tenantIdKey = config('couchbase.tenant_id_key');
 
         $array = $item->toArray();
         $keys = array_keys($array);
-        sort($keys);
-        $this->assertEquals(['_id'
-            , 'category'
+        $testKeys = [
+            '_id'
             , 'created_at'
-            , 'name'
-            , 'tenant_id'
-            , 'type'
             , 'updated_at'
-        ], $keys);
+            , $docTypeKey
+            , $tenantIdKey
+            , 'category'
+            , 'name'
+        ];
+
+        sort($keys);
+        sort($testKeys);
+
+        $this->assertTrue( $testKeys == $keys );
         $this->assertTrue(is_string($array['created_at']));
         $this->assertTrue(is_string($array['updated_at']));
         $this->assertTrue(is_string($array['_id']));

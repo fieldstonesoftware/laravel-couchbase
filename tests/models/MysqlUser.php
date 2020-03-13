@@ -15,12 +15,12 @@ class MysqlUser extends EloquentModel
 
     public function books()
     {
-        return $this->hasMany('Book', 'author_id');
+        return $this->hasMany(Book::class, 'author_id');
     }
 
     public function role()
     {
-        return $this->hasOne('Role');
+        return $this->hasOne(Role::class);
     }
 
     /**
@@ -29,13 +29,15 @@ class MysqlUser extends EloquentModel
     public static function executeSchema()
     {
         $schema = Schema::connection('mysql');
-
-        if (!$schema->hasTable('users')) {
-            Schema::connection('mysql')->create('users', function ($table) {
-                $table->increments('id');
-                $table->string('name');
-                $table->timestamps();
-            });
+        if ($schema->hasTable('users')) {
+            $schema->drop('users');
         }
+
+        Schema::connection('mysql')->create('users', function ($table) {
+            $table->increments('id');
+            $table->string('role_id',255)->nullable();
+            $table->string('name',255)->nullable();
+            $table->timestamps();
+        });
     }
 }

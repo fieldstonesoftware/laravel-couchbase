@@ -4,11 +4,11 @@ namespace Fieldstone\Couchbase\Query;
 
 use Exception;
 use Illuminate\Contracts\Support\Arrayable;
-use Illuminate\Database\Query\Builder as BaseBuilder;
+use Illuminate\Database\Query\Builder as IlluminateDBQueryBuilder;
 use Illuminate\Database\Query\Expression;
-use Illuminate\Database\Query\Grammars\Grammar as BaseGrammar;
+use Illuminate\Database\Query\Grammars\Grammar as IlluminateDBQueryGrammar;
 
-class Grammar extends BaseGrammar
+class Grammar extends IlluminateDBQueryGrammar
 {
     const INDEX_TYPE_VIEW = 'VIEW';
     const INDEX_TYPE_GSI = 'GSI';
@@ -140,10 +140,10 @@ class Grammar extends BaseGrammar
     /**
      * Compile a select query into SQL.
      *
-     * @param  BaseBuilder $query
+     * @param  IlluminateDBQueryBuilder $query
      * @return string
      */
-    public function compileSelect(BaseBuilder $query)
+    public function compileSelect(IlluminateDBQueryBuilder $query)
     {
         // If the query does not have any columns set, we'll set the columns to the
         // * character to just get all of the columns from the database. Then we
@@ -189,7 +189,7 @@ class Grammar extends BaseGrammar
      * @param  array $where
      * @return string
      */
-    protected function whereNull(BaseBuilder $query, $where)
+    protected function whereNull(IlluminateDBQueryBuilder $query, $where)
     {
         return '(' .
             $this->wrap($where['column']) .
@@ -201,11 +201,11 @@ class Grammar extends BaseGrammar
     /**
      * Compile a "between" where clause.
      *
-     * @param  BaseBuilder $query
+     * @param  IlluminateDBQueryBuilder $query
      * @param  array $where
      * @return string
      */
-    protected function whereBetween(BaseBuilder $query, $where)
+    protected function whereBetween(IlluminateDBQueryBuilder $query, $where)
     {
         $between = $where['not'] ? 'not between' : 'between';
 
@@ -219,7 +219,7 @@ class Grammar extends BaseGrammar
      * @param  array $where
      * @return string
      */
-    protected function whereIn(BaseBuilder $query, $where)
+    protected function whereIn(IlluminateDBQueryBuilder $query, $where)
     {
         $values = $this->parameterize($where['values'] ?? []);
 
@@ -231,21 +231,21 @@ class Grammar extends BaseGrammar
     /**
      * Compile a raw where clause.
      *
-     * @param  BaseBuilder $query
+     * @param  IlluminateDBQueryBuilder $query
      * @param  array $where
      * @return string
      */
-    protected function whereRaw(BaseBuilder $query, $where)
+    protected function whereRaw(IlluminateDBQueryBuilder $query, $where)
     {
         return $where['sql'];
     }
 
     /**
-     * @param BaseBuilder $query
+     * @param IlluminateDBQueryBuilder $query
      * @param bool $withAs
      * @return Expression
      */
-    public function getMetaIdExpression(BaseBuilder $query, $withAs = false)
+    public function getMetaIdExpression(IlluminateDBQueryBuilder $query, $withAs = false)
     {
         return new Expression('meta(' . $this->wrapTable($query->getConnection()->getDefaultBucketName()) . ').' . $this->wrapValue('id') . ($withAs ? ' as ' . $this->wrapValue(self::VIRTUAL_META_ID_COLUMN) : ''));
     }
@@ -257,7 +257,7 @@ class Grammar extends BaseGrammar
      * @param  array $where
      * @return string
      */
-    protected function whereNotIn(BaseBuilder $query, $where)
+    protected function whereNotIn(IlluminateDBQueryBuilder $query, $where)
     {
         $values = $this->parameterize($where['values'] ?? []);
 
@@ -268,11 +268,11 @@ class Grammar extends BaseGrammar
 
     /**
      * @param string $column
-     * @param BaseBuilder $query
+     * @param IlluminateDBQueryBuilder $query
      * @param bool $withAs
      * @return Expression|string
      */
-    private function replaceColumnIfMetaId($column, BaseBuilder $query, $withAs = false)
+    private function replaceColumnIfMetaId($column, IlluminateDBQueryBuilder $query, $withAs = false)
     {
         if (is_string($column) && trim($column, self::IDENTIFIER_ENCLOSURE_CHAR) === self::VIRTUAL_META_ID_COLUMN) {
             $column = $this->getMetaIdExpression($query, $withAs);
@@ -320,7 +320,7 @@ class Grammar extends BaseGrammar
     /**
      * {@inheritdoc}
      */
-    public function compileInsert(BaseBuilder $query, array $values)
+    public function compileInsert(IlluminateDBQueryBuilder $query, array $values)
     {
         throw new \Exception('Inserts are done via CouchbaseBucket->upsert(), this method should not be used.');
     }
@@ -330,7 +330,7 @@ class Grammar extends BaseGrammar
      *
      * notice: supported set query only
      */
-    public function compileUpdate(BaseBuilder $query, $values)
+    public function compileUpdate(IlluminateDBQueryBuilder $query, $values)
     {
         // keyspace-ref:
         $table = $this->wrapTable($query->from);
@@ -385,7 +385,7 @@ class Grammar extends BaseGrammar
      *
      * @see http://developer.couchbase.com/documentation/server/4.1/n1ql/n1ql-language-reference/delete.html
      */
-    public function compileDelete(BaseBuilder $query)
+    public function compileDelete(IlluminateDBQueryBuilder $query)
     {
         // keyspace-ref:
         $table = $this->wrapTable($query->from);

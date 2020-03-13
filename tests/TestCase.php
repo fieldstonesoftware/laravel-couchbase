@@ -14,6 +14,13 @@ use Illuminate\Support\Facades\Event;
 class TestCase extends \Orchestra\Testbench\TestCase
 {
 
+    protected function truncateDataOfType(string $connectionName, array $types)
+    {
+        foreach($types as $type){
+            DB::connection($connectionName)->table($type)->truncate();
+        }
+    }
+
     /**
      * Get package providers.
      *

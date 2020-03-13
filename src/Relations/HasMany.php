@@ -48,11 +48,6 @@ class HasMany extends EloquentHasMany
         return $this->foreignKey;
     }
 
-    public function getPlainForeignKey()
-    {
-        return $this->getForeignKeyName();
-    }
-
     /**
      * Get the key for comparing against the parent key in "has" query.
      *

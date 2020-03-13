@@ -1,9 +1,13 @@
 <?php
 namespace Fieldstone\Couchbase\Test;
 
-use MysqlBook;
-use MysqlRole;
-use MysqlUser;
+use Fieldstone\Couchbase\Test\Model\Book;
+use Fieldstone\Couchbase\Test\Model\MysqlBook;
+use Fieldstone\Couchbase\Test\Model\MysqlRole;
+use Fieldstone\Couchbase\Test\Model\MysqlUser;
+use Fieldstone\Couchbase\Test\Model\Role;
+use Fieldstone\Couchbase\Test\Model\User;
+use Illuminate\Database\MySqlConnection;
 
 class MysqlRelationsTest extends TestCase
 {
@@ -14,20 +18,31 @@ class MysqlRelationsTest extends TestCase
         MysqlUser::executeSchema();
         MysqlBook::executeSchema();
         MysqlRole::executeSchema();
+
+        // in case we failed and this is a re-run
+        $this->truncateModels();
     }
 
     public function tearDown() : void
     {
+        $this->truncateModels();
+    }
+
+    public function truncateModels()
+    {
         MysqlUser::truncate();
-        MysqlBook::truncate();
         MysqlRole::truncate();
+        MysqlBook::truncate();
+        User::truncate();
+        Role::truncate();
+        Book::truncate();
     }
 
     public function testMysqlRelations()
     {
         $user = new MysqlUser;
-        $this->assertInstanceOf('MysqlUser', $user);
-        $this->assertInstanceOf('Illuminate\Database\MySqlConnection', $user->getConnection());
+        $this->assertInstanceOf(MysqlUser::class, $user);
+        $this->assertInstanceOf(MySqlConnection::class, $user->getConnection());
 
         // Mysql User
         $user->name = "John Doe";
@@ -37,7 +52,7 @@ class MysqlRelationsTest extends TestCase
         // SQL has many
         $book = new Book(['title' => 'Game of Thrones']);
         $user->books()->save($book);
-        $user = MysqlUser::find($user->id); // refetch
+        $user = $user->fresh(); // refetch
         $this->assertEquals(1, count($user->books));
 
         // Couchbase belongs to
@@ -47,7 +62,7 @@ class MysqlRelationsTest extends TestCase
         // SQL has one
         $role = new Role(['type' => 'admin']);
         $user->role()->save($role);
-        $user = MysqlUser::find($user->id); // refetch
+        $user = $user->fresh(); // get fresh from DB
         $this->assertEquals('admin', $user->role->type);
 
         // Couchbase belongs to

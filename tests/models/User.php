@@ -19,32 +19,32 @@ class User extends CBModel implements AuthenticatableContract, CanResetPasswordC
 
     public function books()
     {
-        return $this->hasMany('Book', 'author_id');
+        return $this->hasMany(Book::class, 'author_id');
     }
 
     public function mysqlBooks()
     {
-        return $this->hasMany('MysqlBook', 'author_id');
+        return $this->hasMany(MysqlBook::class, 'author_id');
     }
 
     public function items()
     {
-        return $this->hasMany('Item');
+        return $this->hasMany(Item::class);
     }
 
     public function role()
     {
-        return $this->hasOne('Role');
+        return $this->hasOne(Role::class);
     }
 
     public function mysqlRole()
     {
-        return $this->hasOne('MysqlRole');
+        return $this->hasOne(MysqlRole::class);
     }
 
     public function clients()
     {
-        return $this->belongsToMany('Client');
+        return $this->belongsToMany(Client::class);
     }
 
     public function groups()
@@ -54,7 +54,7 @@ class User extends CBModel implements AuthenticatableContract, CanResetPasswordC
 
     public function photos()
     {
-        return $this->morphMany('Photo', 'imageable');
+        return $this->morphMany(Photo::class, 'imageable');
     }
 
     public function addresses()

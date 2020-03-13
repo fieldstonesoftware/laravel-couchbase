@@ -10,6 +10,26 @@ use ReflectionExtension;
 
 class ConnectionTest extends TestCase
 {
+    public function setUp() : void
+    {
+        parent::setUp();
+
+        // in case we failed and this is a re-run
+        $this->truncateData();
+    }
+
+    public function tearDown() : void
+    {
+        $this->truncateData();
+    }
+
+    private function truncateData()
+    {
+        $types = ['item'];
+        $this->truncateDataOfType('couchbase-default', $types);
+        $this->truncateDataOfType('couchbase-not-default', $types);
+    }
+
     public function testConnection()
     {
         $connection = DB::connection('couchbase-default');
@@ -98,9 +118,10 @@ class ConnectionTest extends TestCase
     public function testConnectionSingleton()
     {
         /** @var \Fieldstone\Couchbase\Connection $c1 */
-        /** @var \Fieldstone\Couchbase\Connection $c2 */
         $c1 = DB::connection();
+        /** @var \Fieldstone\Couchbase\Connection $c2 */
         $c2 = DB::connection('couchbase-default');
+
         $this->assertEquals(spl_object_hash($c1), spl_object_hash($c2));
         $this->assertEquals(spl_object_hash($c1->getCouchbaseCluster()), spl_object_hash($c2->getCouchbaseCluster()));
 
@@ -151,22 +172,21 @@ class ConnectionTest extends TestCase
     public function testQueryLog()
     {
         DB::connection()->enableQueryLog();
-
         $this->assertEquals(0, count(DB::getQueryLog()));
 
-        DB::type('items')->get();
+        DB::type('item')->get();
         $this->assertEquals(1, count(DB::getQueryLog()));
 
-        DB::type('items')->count();
+        DB::type('item')->count();
         $this->assertEquals(2, count(DB::getQueryLog()));
 
-        DB::type('items')->where('name', 'test')->update(['name' => 'test']);
+        DB::type('item')->where('name', 'test')->update(['name' => 'test']);
         $this->assertEquals(3, count(DB::getQueryLog()));
 
-        DB::type('items')->where('name', 'test')->delete();
+        DB::type('item')->where('name', 'test')->delete();
         $this->assertEquals(4, count(DB::getQueryLog()));
 
-        DB::type('items')->insert(['name' => 'test']);
+        DB::type('item')->insert(['name' => 'test']);
         $this->assertEquals(4, count(DB::getQueryLog())); // insert does not use N1QL-queries
     }
 

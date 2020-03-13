@@ -8,7 +8,8 @@ use CouchbaseBucket;
 use CouchbaseCluster;
 use Fieldstone\Couchbase\Events\QueryFired;
 use Fieldstone\Couchbase\Query\Builder as QueryBuilder;
-use Fieldstone\Couchbase\Schema\Grammar;
+use Fieldstone\Couchbase\Schema\Grammar as CBSchemaGrammar;
+use Fieldstone\Couchbase\Query\Grammar as CBQueryGrammar;
 
 class Connection extends \Illuminate\Database\Connection
 {
@@ -299,22 +300,28 @@ class Connection extends \Illuminate\Database\Connection
     }
 
     /**
-     * Get the query grammar used by the connection.
-     *
-     * @return \Illuminate\Database\Query\Grammars\Grammar
-     */
-    public function getQueryGrammar() : \Illuminate\Database\Query\Grammars\Grammar
-    {
-        return $this->queryGrammar;
-    }
-
-    /**
      * return Cluster object.
      *
      * @return CouchbaseCluster
      */
     public function getCouchbaseCluster() : CouchbaseCluster
     {
+        return $this->getConnection();
+    }
+
+    public function getConnection()
+    {
+        if(!isset($this->connection)){
+            // Get the Cluster Address from Config
+            $address = $this->getAddress($this->config);
+
+            // Set connection (Cluster)
+            $this->connection = $this->createConnection($address, $this->config);
+
+            // Set Bucket - Opens the Connection
+            $this->bucket = $this->connection->openBucket($this->getDefaultBucketName());
+        }
+
         return $this->connection;
     }
 
@@ -397,17 +404,17 @@ class Connection extends \Illuminate\Database\Connection
      */
     protected function getDefaultSchemaGrammar()
     {
-        return new Schema\Grammar;
+        return new CBSchemaGrammar();
     }
 
     /**
      * Get the default schema grammar instance.
      *
-     * @return Grammar
+     * @return CBQueryGrammar
      */
     protected function getDefaultQueryGrammar()
     {
-        return new Grammar();
+        return new CBQueryGrammar();
     }
 
     /**
