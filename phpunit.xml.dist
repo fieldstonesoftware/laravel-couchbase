@@ -24,14 +24,11 @@
             <file>tests/PaginationTest.php</file>
             <file>tests/SeederTest.php</file>
             <file>tests/ValidationTest.php</file>
+            <file>tests/MysqlRelationsTest.php</file>
 
 <!--            TODO-->
 <!--            Investigate-->
 <!--            <file>tests/InlineParametersTest.php</file>-->
-
-<!--            Failing and Needs Work-->
-<!--            Hybrid Relations needs review-->
-<!--            <file>tests/MysqlRelationsTest.php</file>-->
 
         </testsuite>
     </testsuites>
