@@ -12,24 +12,20 @@
 >
     <testsuites>
         <testsuite name="all">
+<!--            Keep this as First-->
             <file>tests/ConnectionTest.php</file>
-            <file>tests/AuthTest.php</file>
-            <file>tests/QueryTest.php</file>
-            <file>tests/ModelTest.php</file>
             <file>tests/ArgsParametersTest.php</file>
+            <file>tests/AuthTest.php</file>
+<!--            Connection Above-->
             <file>tests/EmbeddedRelationsTest.php</file>
+            <file>tests/ModelTest.php</file>
+            <file>tests/MysqlRelationsTest.php</file>
+            <file>tests/PaginationTest.php</file>
             <file>tests/QueryBuilderTest.php</file>
             <file>tests/QueryTest.php</file>
             <file>tests/RelationsTest.php</file>
-            <file>tests/PaginationTest.php</file>
             <file>tests/SeederTest.php</file>
             <file>tests/ValidationTest.php</file>
-            <file>tests/MysqlRelationsTest.php</file>
-
-<!--            TODO-->
-<!--            Investigate-->
-<!--            <file>tests/InlineParametersTest.php</file>-->
-
         </testsuite>
     </testsuites>
     <filter>
