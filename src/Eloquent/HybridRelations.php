@@ -221,8 +221,15 @@ trait HybridRelations
      * @param string $relation
      * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
      */
-    public function belongsToMany($related, $collection = null, $foreignKey = null, $otherKey = null, $parentKey = NULL, $relatedKey = NULL, $relation = null)
+    public function belongsToMany($related, $collection = null, $foreignPivotKey = null, $relatedPivotKey = null
+        , $parentKey = NULL, $relatedKey = NULL, $relation = null)
     {
+        // pass to standard eloquent if its not a CB model
+        if (!is_subclass_of($related, \Fieldstone\Couchbase\Eloquent\Model::class)) {
+            return parent::belongsToMany($related, $collection, $foreignPivotKey, $relatedPivotKey, $parentKey
+                , $relatedKey, $relation);
+        }
+
         // If no relationship name was passed, we will pull backtraces to get the
         // name of the calling function. We will use that function name as the
         // title of this relation since that is a great convention to apply.
@@ -230,19 +237,14 @@ trait HybridRelations
             $relation = $this->guessBelongsToManyRelation();
         }
 
-        // Check if it is a relation with an original model.
-        if (!is_subclass_of($related, \Fieldstone\Couchbase\Eloquent\Model::class)) {
-            return parent::belongsToMany($related, $collection, $foreignKey, $otherKey, $parentKey, $relatedKey, $relation);
-        }
-
         // First, we'll need to determine the foreign key and "other key" for the
         // relationship. Once we have determined the keys we'll make the query
         // instances as well as the relationship instances we need for this.
-        $foreignKey = $foreignKey ?: $this->getForeignKey() . 's';
+        $instance = $this->newRelatedInstance($related);
 
-        $instance = new $related;
+        $foreignPivotKey = $foreignPivotKey ?: Str::plural($this->getForeignKey());
 
-        $otherKey = $otherKey ?: $instance->getForeignKey() . 's';
+        $relatedPivotKey = $relatedPivotKey ?: Str::plural($instance->getForeignKey());
 
         // If no table name was provided, we can guess it by concatenating the two
         // models using underscores in alphabetical order. The two model names
@@ -256,6 +258,9 @@ trait HybridRelations
         // appropriate query constraint and entirely manages the hydrations.
         $query = $instance->newQuery();
 
-        return new BelongsToMany($query, $this, $collection, $foreignKey, $otherKey, $relation);
+        return new BelongsToMany($query, $this, $collection, $foreignPivotKey, $relatedPivotKey
+            , $parentKey ?: $this->getKeyName()
+            , $relatedKey ?: $instance->getKeyName()
+            , $relation);
     }
 }

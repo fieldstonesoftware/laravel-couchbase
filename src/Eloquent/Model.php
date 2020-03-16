@@ -364,9 +364,9 @@ class Model extends BaseModel
             $unique = false;
 
             if (count($parameters) == 3) {
-                list($column, $values, $unique) = $parameters;
+                list($key, $values, $unique) = $parameters;
             } else {
-                list($column, $values) = $parameters;
+                list($key, $values) = $parameters;
             }
 
             // Do batch push by default.
@@ -376,9 +376,9 @@ class Model extends BaseModel
 
             $query = $this->setKeysForSaveQuery($this->newQuery());
 
-            $this->pushAttributeValues($column, $values, $unique);
+            $this->pushAttributeValues($key, $values, $unique);
 
-            return $query->push($column, $values, $unique);
+            return $query->push($key, $values, $unique);
         }
 
         return parent::push();

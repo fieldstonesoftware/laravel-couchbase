@@ -19,6 +19,8 @@
             <file>tests/ArgsParametersTest.php</file>
             <file>tests/EmbeddedRelationsTest.php</file>
             <file>tests/QueryBuilderTest.php</file>
+            <file>tests/QueryTest.php</file>
+            <file>tests/RelationsTest.php</file>
 
 <!--            <file>tests/PaginationTest.php</file>-->
 

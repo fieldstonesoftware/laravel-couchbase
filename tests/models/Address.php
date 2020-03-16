@@ -10,6 +10,6 @@ class Address extends CBModel
 
     public function addresses()
     {
-        return $this->embedsMany('Address');
+        return $this->embedsMany(Address::class);
     }
 }

@@ -45,11 +45,12 @@ class User extends CBModel implements AuthenticatableContract, CanResetPasswordC
     public function clients()
     {
         return $this->belongsToMany(Client::class);
+//        return $this->belongsToMany(Client::class, null, 'user_ids', 'client_ids');
     }
 
     public function groups()
     {
-        return $this->belongsToMany('Group', null, 'users', 'groups');
+        return $this->belongsToMany(Group::class, null, 'users', 'groups');
     }
 
     public function photos()

@@ -15,12 +15,12 @@ class MysqlRole extends EloquentModel
 
     public function user()
     {
-        return $this->belongsTo('User');
+        return $this->belongsTo(User::class);
     }
 
     public function mysqlUser()
     {
-        return $this->belongsTo('MysqlUser');
+        return $this->belongsTo(MysqlUser::class);
     }
 
     /**

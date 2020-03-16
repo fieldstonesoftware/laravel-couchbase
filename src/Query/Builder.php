@@ -544,40 +544,46 @@ class Builder extends IlluminateQueryBuilder
 
     /**
      * Append one or more values to an array.
-     * @param  mixed $column
-     * @param  mixed $value
+     * @param mixed $key
+     * @param mixed $value
      * @param bool $unique
      *
      * @return array|Document
+     * @throws \Exception
      */
-    public function push($column, $value = null, $unique = false)
+    public function push($key, $value = null, $unique = false)
     {
+        if(empty($key)) throw new \Exception("Can not push to empty key!");
+
         $obj = $this->connection->getCouchbaseBucket()->get($this->keys);
-        if (!isset($obj->value->{$column})) {
-            $obj->value->{$column} = [];
+        if (!isset($obj->value->{$key})) {
+            $obj->value->{$key} = [];
         }
         if (is_array($value) && count($value) === 1) {
-            $obj->value->{$column}[] = reset($value);
+            $obj->value->{$key}[] = reset($value);
         } else {
-            $obj->value->{$column}[] = $value;
+            $obj->value->{$key}[] = $value;
         }
         if ($unique) {
-            $array = array_map('json_encode', $obj->value->{$column});
+            $array = array_map('json_encode', $obj->value->{$key});
             $array = array_unique($array);
-            $obj->value->{$column} = array_map('json_decode', $array);
+            $obj->value->{$key} = array_map('json_decode', $array);
         }
         return $this->connection->getCouchbaseBucket()->upsert($this->keys, $obj->value);
     }
 
     /**
      * Remove one or more values from an array.
-     * @param  mixed $column
-     * @param  mixed $value
+     * @param mixed $key
+     * @param mixed $value
      * @return array|Document|null
      * @throws Exception
+     * @throws \Exception
      */
-    public function pull($column, $value = null)
+    public function pull($key, $value = null)
     {
+        if(empty($key)) throw new \Exception("Can not pull from empty key!");
+
         try {
             $obj = $this->connection->getCouchbaseBucket()->get($this->keys);
         } catch (Exception $e) {
@@ -593,13 +599,13 @@ class Builder extends IlluminateQueryBuilder
             $value = [$value];
         }
 
-        if (!isset($obj->value->{$column})) {
-            trigger_error('Tying to pull a value from non existing column ' . json_encode($column) . ' in document ' . json_encode($this->keys) . '.',
+        if (!isset($obj->value->{$key})) {
+            trigger_error('Tying to pull a value from non existing column ' . json_encode($key) . ' in document ' . json_encode($this->keys) . '.',
                 E_USER_WARNING);
             return null;
         }
 
-        $filtered = collect($obj->value->{$column})->reject(function ($val, $key) use ($value) {
+        $filtered = collect($obj->value->{$key})->reject(function ($val, $key) use ($value) {
             $match = false;
             if (is_object($val)) {
                 foreach ($value AS $matchKey => $matchValue) {
@@ -613,7 +619,7 @@ class Builder extends IlluminateQueryBuilder
 
             return $match;
         });
-        $obj->value->{$column} = $filtered->flatten()->toArray();
+        $obj->value->{$key} = $filtered->flatten()->toArray();
 
         return $this->connection->getCouchbaseBucket()->upsert($this->keys, $obj->value);
     }
