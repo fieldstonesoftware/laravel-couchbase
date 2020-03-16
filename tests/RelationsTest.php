@@ -591,38 +591,39 @@ class RelationsTest extends TestCase
      */
     public function testMorph()
     {
-        $user = User::create(['name' => 'John Doe']);
-        $client = Client::create(['name' => 'Jane Doe']);
+        $userJohnDoe = User::create(['name' => 'John Doe']);
 
         $photo = Photo::create(['url' => 'http://graph.facebook.com/john.doe/picture']);
-        $photo = $user->photos()->save($photo);
+        $photo = $userJohnDoe->photos()->save($photo);
 
-        $this->assertEquals(1, $user->photos->count());
-        $this->assertEquals($photo->id, $user->photos->first()->id);
+        $this->assertEquals(1, $userJohnDoe->photos->count());
+        $this->assertEquals($photo->id, $userJohnDoe->photos->first()->id);
 
-        $user = User::find($user->_id);
-        $this->assertEquals(1, $user->photos->count());
-        $this->assertEquals($photo->id, $user->photos->first()->id);
+        $userJohnDoe = User::find($userJohnDoe->_id);
+        $this->assertEquals(1, $userJohnDoe->photos->count());
+        $this->assertEquals($photo->id, $userJohnDoe->photos->first()->id);
 
         $photo = Photo::create(['url' => 'http://graph.facebook.com/jane.doe/picture']);
-        $client->photo()->save($photo);
 
-        $this->assertNotNull($client->photo);
-        $this->assertEquals($photo->id, $client->photo->id);
+        $clientJaneDoe = Client::create(['name' => 'Jane Doe']);
+        $clientJaneDoe->photo()->save($photo);
 
-        $client = Client::find($client->_id);
-        $this->assertNotNull($client->photo);
-        $this->assertEquals($photo->id, $client->photo->id);
+        $this->assertNotNull($clientJaneDoe->photo);
+        $this->assertEquals($photo->id, $clientJaneDoe->photo->id);
 
-        $photo = Photo::first();
-        $this->assertEquals($photo->imageable->name, $user->name);
+        $clientJaneDoe = Client::find($clientJaneDoe->_id);
+        $this->assertNotNull($clientJaneDoe->photo);
+        $this->assertEquals($photo->id, $clientJaneDoe->photo->id);
 
-        $user = User::with('photos')->find($user->_id);
+        $photo = Photo::where('url','http://graph.facebook.com/john.doe/picture')->first();
+        $this->assertEquals($photo->imageable->name, $userJohnDoe->name);
+
+        $user = User::with('photos')->find($userJohnDoe->_id);
         $relations = $user->getRelations();
         $this->assertTrue(array_key_exists('photos', $relations));
         $this->assertEquals(1, $relations['photos']->count());
 
-        $photos = Photo::with('imageable')->get();
+        $photos = Photo::with('imageable')->orderBy('imageable_type','DESC')->get();
         $relations = $photos[0]->getRelations();
         $this->assertTrue(array_key_exists('imageable', $relations));
         $this->assertInstanceOf(User::class, $photos[0]->imageable);
