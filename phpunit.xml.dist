@@ -23,10 +23,9 @@
             <file>tests/RelationsTest.php</file>
             <file>tests/PaginationTest.php</file>
             <file>tests/SeederTest.php</file>
+            <file>tests/ValidationTest.php</file>
 
 <!--            TODO-->
-<!--            <file>tests/ValidationTest.php</file>-->
-
 <!--            Investigate-->
 <!--            <file>tests/InlineParametersTest.php</file>-->
 
