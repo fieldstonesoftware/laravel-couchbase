@@ -1,4 +1,5 @@
 <?php
+namespace Fieldstone\Couchbase\Test\Seeds;
 
 use Illuminate\Database\Seeder;
 
@@ -11,6 +12,6 @@ class DatabaseSeeder extends Seeder
      */
     public function run()
     {
-        $this->call('UserTableSeeder');
+        $this->call(UserTableSeeder::class);
     }
 }

@@ -1,9 +1,9 @@
 <?php
 namespace Fieldstone\Couchbase\Test;
 
+use Fieldstone\Couchbase\Test\Model\User;
+use Fieldstone\Couchbase\Test\Seeds\UserTableSeeder;
 use Illuminate\Support\Facades\Artisan;
-use User;
-use UserTableSeeder;
 
 class SeederTest extends TestCase
 {
@@ -23,7 +23,7 @@ class SeederTest extends TestCase
 
     public function testArtisan()
     {
-        Artisan::call('db:seed');
+        Artisan::call('db:seed', ['--class' => '\Fieldstone\Couchbase\Test\Seeds\DatabaseSeeder']);
 
         $user = User::where('name', 'John Doe')->first();
         $this->assertTrue($user->seed);

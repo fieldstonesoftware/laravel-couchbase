@@ -21,8 +21,11 @@
             <file>tests/QueryBuilderTest.php</file>
             <file>tests/QueryTest.php</file>
             <file>tests/RelationsTest.php</file>
+            <file>tests/PaginationTest.php</file>
+            <file>tests/SeederTest.php</file>
 
-<!--            <file>tests/PaginationTest.php</file>-->
+<!--            TODO-->
+<!--            <file>tests/ValidationTest.php</file>-->
 
 <!--            Investigate-->
 <!--            <file>tests/InlineParametersTest.php</file>-->
@@ -30,6 +33,7 @@
 <!--            Failing and Needs Work-->
 <!--            Hybrid Relations needs review-->
 <!--            <file>tests/MysqlRelationsTest.php</file>-->
+
         </testsuite>
     </testsuites>
     <filter>
