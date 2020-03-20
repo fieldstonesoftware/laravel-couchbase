@@ -67,9 +67,4 @@ class User extends CBModel implements AuthenticatableContract, CanResetPasswordC
     {
         return $this->embedsOne(User::class);
     }
-
-    public function getDateFormat()
-    {
-        return 'l jS \of F Y h:i:s A';
-    }
 }

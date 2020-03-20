@@ -16,6 +16,11 @@ class Model extends BaseModel
 {
     use HybridRelations;
 
+    const CREATED_AT = 'dt_created';
+    const UPDATED_AT = 'dt_updated';
+
+    protected $dateFormat = 'c';
+
     /**
      * The collection associated with the model.
      * @var string
@@ -197,16 +202,6 @@ class Model extends BaseModel
         $instance = new $related;
 
         return new EmbedsOne($query, $this, $instance, $localKey, $foreignKey, $relation);
-    }
-
-    /**
-     * Get the format for database stored dates.
-     *
-     * @return string
-     */
-    public function getDateFormat()
-    {
-        return $this->dateFormat ?: 'Y-m-d H:i:s';
     }
 
     /**
