@@ -16,11 +16,6 @@ class Model extends BaseModel
 {
     use HybridRelations;
 
-    const CREATED_AT = 'dt_created';
-    const UPDATED_AT = 'dt_updated';
-
-    protected $dateFormat = 'c';
-
     /**
      * The collection associated with the model.
      * @var string
