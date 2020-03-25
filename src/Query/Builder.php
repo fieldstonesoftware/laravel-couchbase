@@ -4,7 +4,7 @@ namespace Fieldstone\Couchbase\Query;
 
 use Couchbase\Document;
 use Couchbase\Exception;
-use Fieldstone\Couchbase\KeyId;
+use Fieldstone\Couchbase\Eloquent\Model;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Query\Builder as IlluminateQueryBuilder;
@@ -465,7 +465,7 @@ class Builder extends IlluminateQueryBuilder
         // if no id or _id is specified, generate one
         // unset the ID value within the document - it gets stored separately in CB
         if(!isset($document['_id']) && !isset($document['id'])){
-            $docId = KeyId::GetNewId($this->sType, $this->sTenantId);
+            $docId = Model::sGetNewKeyValue($this->sType, $this->sTenantId);
         }else{ // otherwise honor what is provided
             if(isset($document['_id'])){
                 $docId = $document['_id'];

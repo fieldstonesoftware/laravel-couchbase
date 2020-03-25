@@ -5,12 +5,12 @@ namespace Fieldstone\Couchbase\Eloquent;
 use Illuminate\Database\Eloquent\Model as BaseModel;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Arr;
-use Fieldstone\Couchbase\KeyId;
 use Fieldstone\Couchbase\Query\Builder as QueryBuilder;
 use Fieldstone\Couchbase\Query\Grammar;
 use Fieldstone\Couchbase\Relations\EmbedsMany;
 use Fieldstone\Couchbase\Relations\EmbedsOne;
 use Illuminate\Support\Str;
+use Webpatser\Uuid\Uuid;
 
 class Model extends BaseModel
 {
@@ -48,6 +48,18 @@ class Model extends BaseModel
     protected $parentRelation;
 
     /**
+     * The segment separator used in the document key.
+     * @var string
+     */
+    const KEY_SEGMENT_SEPARATOR = ':';
+
+    /**
+     * The default tenant ID used in the document key
+     * @var string
+     */
+    protected $keyDefaultTenantId = '!';
+
+    /**
      * Custom accessor for the model's id.
      * Converts references to ->id into the Couchbase ->_id
      * @param  mixed $value
@@ -75,7 +87,7 @@ class Model extends BaseModel
      *
      */
     public function getTenantId(){
-        return KeyId::AllTenantIndicator;
+        return $this->keyDefaultTenantId;
     }
 
     /**
@@ -124,9 +136,33 @@ class Model extends BaseModel
      * @return string
      * @throws \Exception if something goes wrong with generating a UUID
      */
-    public function getNewKeyValue()
+    public function getNewKeyValue($uniqueId = null)
     {
-        return KeyId::getNewId($this->getDocumentType(), $this->getTenantId());
+        return self::sGetNewKeyValue(
+            $this->getDocumentType()
+            , $this->getTenantId()
+            , $uniqueId
+        );
+    }
+
+    /**
+     * Return a new key value.
+     *
+     * @param $documentType
+     * @param null $tenantId
+     * @param null $uniqueId
+     * @return string|string[]
+     */
+    public static function sGetNewKeyValue($documentType, $tenantId=null, $uniqueId = null)
+    {
+        return (empty($tenantId) ? '' : $tenantId.self::KEY_SEGMENT_SEPARATOR)
+        . $documentType
+        . self::KEY_SEGMENT_SEPARATOR
+        . (empty($uniqueId) ? self::getNewUniqueId() : $uniqueId);
+    }
+
+    public static function getNewUniqueId(){
+        return str_replace('-','',Uuid::generate(4));
     }
 
     /**
