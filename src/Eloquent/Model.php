@@ -2,6 +2,7 @@
 
 namespace Fieldstone\Couchbase\Eloquent;
 
+use DateTime;
 use Illuminate\Database\Eloquent\Model as BaseModel;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Arr;
@@ -58,6 +59,12 @@ class Model extends BaseModel
      * @var string
      */
     protected $keyDefaultTenantId = '!';
+
+    /**
+     * The default date format.
+     * @var string
+     */
+    protected $dateFormat = DateTime::ISO8601;
 
     /**
      * Custom accessor for the model's id.
