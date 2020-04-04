@@ -50,9 +50,10 @@ class Model extends BaseModel
 
     /**
      * The segment separator used in the document key.
+     * We use a dash by default so these keys can be used in file systems as directory or file names.
      * @var string
      */
-    const KEY_SEGMENT_SEPARATOR = ':';
+    const KEY_SEGMENT_SEPARATOR = '-';
 
     /**
      * The default tenant ID used in the document key
