@@ -95,6 +95,10 @@ class Model extends BaseModel
      *
      */
     public function getTenantId(){
+        if($this->relationLoaded('tenant')){
+            return $this->tenant->_id;
+        }
+
         return $this->keyDefaultTenantId;
     }
 
