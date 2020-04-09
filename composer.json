@@ -15,10 +15,10 @@
       "ext-json": "*",
       "ext-couchbase": "^2.6.2",
       "webpatser/laravel-uuid": "^3.0",
-      "illuminate/support": "^5.8",
-      "illuminate/container": "^5.8",
-      "illuminate/database": "^5.8",
-      "illuminate/events": "^5.8"
+      "illuminate/support": "^6.0|^7.0",
+      "illuminate/container": "^6.0|^7.0",
+      "illuminate/database": "^6.0|^7.0",
+      "illuminate/events": "^6.0|^7.0"
     },
     "require-dev": {
     "mockery/mockery": "^1.3",

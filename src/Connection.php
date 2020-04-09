@@ -271,10 +271,11 @@ class Connection extends \Illuminate\Database\Connection
      * Begin a fluent query against documents with given type.
      *
      * @param string $documentType
+     * @param null $as
      * @return Query\Builder
      * @throws \Exception
      */
-    public function table($documentType)
+    public function table($documentType, $as = NULL)
     {
         return $this->builder($documentType);
     }

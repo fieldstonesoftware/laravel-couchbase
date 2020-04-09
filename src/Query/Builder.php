@@ -9,7 +9,6 @@ use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Query\Builder as IlluminateQueryBuilder;
 use Illuminate\Database\Query\Expression;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Fieldstone\Couchbase\Query\Grammar as QueryGrammar;
 use Fieldstone\Couchbase\Connection;
@@ -194,7 +193,7 @@ class Builder extends IlluminateQueryBuilder
      * @param  string $type
      * @return $this
      */
-    public function from($type)
+    public function from($type, $as = NULL)
     {
         // the "table" name (from) is actually the bucket name for Couchbase
         $this->from = $this->connection->getDefaultBucketName();
