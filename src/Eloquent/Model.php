@@ -49,17 +49,18 @@ class Model extends BaseModel
     protected $parentRelation;
 
     /**
+     * The string to use as the document type.
+     * If left unset, the snake cased class name will be used.
+     * @var string
+     */
+    protected $docType = '';
+
+    /**
      * The segment separator used in the document key.
      * We use a dash by default so these keys can be used in file systems as directory or file names.
      * @var string
      */
     const KEY_SEGMENT_SEPARATOR = '-';
-
-    /**
-     * The default tenant ID used in the document key
-     * @var string
-     */
-    protected $keyDefaultTenantId = '!';
 
     /**
      * The default date format.
@@ -88,7 +89,10 @@ class Model extends BaseModel
      */
     public function getDocumentType()
     {
-        return Str::snake(class_basename($this));
+        if(empty($this->docType)){
+            return Str::snake(class_basename($this));
+        }
+        return $this->docType;
     }
 
     /**
@@ -99,7 +103,7 @@ class Model extends BaseModel
             return $this->tenant->_id;
         }
 
-        return $this->keyDefaultTenantId;
+        return null;  // no tenant
     }
 
     /**
@@ -159,6 +163,10 @@ class Model extends BaseModel
 
     /**
      * Return a new key value.
+     * Two possible formats.
+     * 1: documentType + KEY_SEGMENT_SEPARATOR + uniqueId
+     * 2: tenantId + KEY_SEGMENT_SEPARATOR + documentType + KEY_SEGMENT_SEPARATOR + uniqueId
+     * tenantId itself would also contain two parts separated by the KEY_SEGMENT_SEPARATOR
      *
      * @param $documentType
      * @param null $tenantId
@@ -168,13 +176,13 @@ class Model extends BaseModel
     public static function sGetNewKeyValue($documentType, $tenantId=null, $uniqueId = null)
     {
         return (empty($tenantId) ? '' : $tenantId.self::KEY_SEGMENT_SEPARATOR)
-        . $documentType
-        . self::KEY_SEGMENT_SEPARATOR
+        . $documentType.self::KEY_SEGMENT_SEPARATOR
         . (empty($uniqueId) ? self::getNewUniqueId() : $uniqueId);
     }
 
     public static function getNewUniqueId(){
-        return str_replace('-','',Uuid::generate(4));
+        // remove dashes from UUID
+        return str_replace('-','',Str::uuid());
     }
 
     /**

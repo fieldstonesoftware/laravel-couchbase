@@ -7,6 +7,7 @@ use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Query\Builder as IlluminateDBQueryBuilder;
 use Illuminate\Database\Query\Expression;
 use Illuminate\Database\Query\Grammars\Grammar as IlluminateDBQueryGrammar;
+use Illuminate\Support\Str;
 
 class Grammar extends IlluminateDBQueryGrammar
 {
@@ -291,7 +292,7 @@ class Grammar extends IlluminateDBQueryGrammar
     {
         $values = $this->parameterize($where['values'] ?? []);
 
-        $colIdentifier = str_random(32);
+        $colIdentifier = Str::random(32);
         return 'ANY ' .
             $this->wrapValue($colIdentifier) .
             ' IN ' .
@@ -359,7 +360,7 @@ class Grammar extends IlluminateDBQueryGrammar
                     ' = ' .
                     $this->wrapData($value) .
                     ' FOR ' .
-                    $this->wrap(str_singular($forIn['alias'])) .
+                    $this->wrap(Str::singular($forIn['alias'])) .
                     ' IN ' .
                     $this->wrap($forIn['alias']) .
                     ' WHEN ' .
