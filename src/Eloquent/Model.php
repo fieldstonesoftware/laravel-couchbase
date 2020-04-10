@@ -148,37 +148,31 @@ class Model extends BaseModel
     }
 
     /**
-     * Get the primary key for the model.
-     *
-     * @return string
-     * @throws \Exception if something goes wrong with generating a UUID
-     */
-    public function getNewKeyValue($uniqueId = null)
-    {
-        return self::sGetNewKeyValue(
-            $this->getDocumentType()
-            , $this->getTenantId()
-            , $uniqueId
-        );
-    }
-
-    /**
      * Return a new key value.
      * Two possible formats.
      * 1: documentType + KEY_SEGMENT_SEPARATOR + uniqueId
      * 2: tenantId + KEY_SEGMENT_SEPARATOR + documentType + KEY_SEGMENT_SEPARATOR + uniqueId
      * tenantId itself would also contain two parts separated by the KEY_SEGMENT_SEPARATOR
      *
-     * @param $documentType
-     * @param null $tenantId
-     * @param null $uniqueId
-     * @return string|string[]
+     * @param string $uniqueId (optional)
+     * @return string
      */
-    public static function sGetNewKeyValue($documentType, $tenantId=null, $uniqueId = null)
+    public function getNewKeyValue($uniqueId = null)
     {
-        return (empty($tenantId) ? '' : $tenantId.self::KEY_SEGMENT_SEPARATOR)
-        . $documentType.self::KEY_SEGMENT_SEPARATOR
-        . (empty($uniqueId) ? self::getNewUniqueId() : $uniqueId);
+        $tenantId = $this->getTenantId();
+        $documentType = $this->getDocumentType();
+
+        // prepend the tenant id if available
+        $sKey = '';
+        if(empty($tenantId)){
+            $sKey = $tenantId.self::KEY_SEGMENT_SEPARATOR;
+        }
+
+        // add document type
+        $sKey.= $documentType.self::KEY_SEGMENT_SEPARATOR;
+
+        // add supplied uniqueId or generate one if none supplied
+        return $sKey.(empty($uniqueId) ? self::getNewUniqueId() : $uniqueId);
     }
 
     public static function getNewUniqueId(){
@@ -640,11 +634,6 @@ class Model extends BaseModel
      */
     public function performInsert(\Illuminate\Database\Eloquent\Builder $query)
     {
-        // If it is not set, set the document ID
-        if(!isset($this->attributes['_id'])){
-            $this->setAttribute($this->getKeyName(), $this->getNewKeyValue());
-        }
-
         // set document type
         $this->setAttribute($this->getDocumentTypeKeyName(), $this->getDocumentType());
 
@@ -652,6 +641,12 @@ class Model extends BaseModel
         $tenantId = $this->getTenantId();
         if(!empty($tenantId)){
             $this->setAttribute($this->getTenantIdKeyName(), $this->getTenantId());
+        }
+
+        // If it is not set, set the document ID
+        // The tenant ID can go into this so we do it last.
+        if(!isset($this->attributes['_id']) && !isset($this->attributes[$this->getKeyName()])){
+            $this->setAttribute($this->getKeyName(), $this->getNewKeyValue());
         }
 
         return parent::performInsert($query);
