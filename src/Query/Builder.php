@@ -102,7 +102,7 @@ class Builder extends IlluminateQueryBuilder
      * @var string
      */
     public $sTenantIdKey;
-    public $sTenantId = '!';  // the tenant ID - default to ! public
+    public $sTenantId = null;  // the tenant ID - default to null - unused
 
     /**
      * Create a new query builder instance.
@@ -475,8 +475,8 @@ class Builder extends IlluminateQueryBuilder
             }
         }
 
-        // set the tenant id if not set
-        if(!isset($document[$this->sTenantIdKey])){
+        // set the tenant id if not set and non-empty
+        if(!isset($document[$this->sTenantIdKey]) && !empty($this->sTenantId)){
             $document[$this->sTenantIdKey] = $this->sTenantId;
         }
 

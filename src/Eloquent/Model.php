@@ -11,7 +11,6 @@ use Fieldstone\Couchbase\Query\Grammar;
 use Fieldstone\Couchbase\Relations\EmbedsMany;
 use Fieldstone\Couchbase\Relations\EmbedsOne;
 use Illuminate\Support\Str;
-use Webpatser\Uuid\Uuid;
 
 class Model extends BaseModel
 {
@@ -143,7 +142,7 @@ class Model extends BaseModel
      *
      * @return string
      */
-    public static function getTenantIdKeyName()
+    public function getTenantIdKeyName()
     {
         return config('couchbase.tenant_id_key');
     }
@@ -649,9 +648,9 @@ class Model extends BaseModel
         // set document type
         $this->setAttribute($this->getDocumentTypeKeyName(), $this->getDocumentType());
 
-        // set tenant ID if its defined
+        // set tenant ID if its not empty
         $tenantId = $this->getTenantId();
-        if($tenantId !== null){
+        if(!empty($tenantId)){
             $this->setAttribute($this->getTenantIdKeyName(), $this->getTenantId());
         }
 

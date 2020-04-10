@@ -315,7 +315,7 @@ class QueryBuilderTest extends TestCase
 
         $list = DB::connection(self::C_NAME)->table('item')->pluck('name', '_id')->toArray();
         $this->assertEquals(4, count($list));
-        $this->assertEquals(39, strlen(key($list)));
+        $this->assertEquals(37, strlen(key($list)));
     }
 
     /**
