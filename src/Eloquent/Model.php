@@ -96,7 +96,9 @@ class Model extends BaseModel
     }
 
     /**
-     *
+     * Define a tenant relationship in your model and we will use that
+     * for the tenant ID. Or, override this method and return the
+     * tenant ID you'd like used.
      */
     public function getTenantId(){
         if($this->relationLoaded('tenant')){
@@ -647,8 +649,11 @@ class Model extends BaseModel
         // set document type
         $this->setAttribute($this->getDocumentTypeKeyName(), $this->getDocumentType());
 
-        // set tenant ID
-        $this->setAttribute($this->getTenantIdKeyName(), $this->getTenantId());
+        // set tenant ID if its defined
+        $tenantId = $this->getTenantId();
+        if($tenantId !== null){
+            $this->setAttribute($this->getTenantIdKeyName(), $this->getTenantId());
+        }
 
         return parent::performInsert($query);
     }

@@ -350,7 +350,6 @@ class ModelTest extends TestCase
     {
         $item = Item::create(['name' => 'fork', 'category' => 'sharp']);
         $docTypeKey = config('couchbase.type_key');
-        $tenantIdKey = config('couchbase.tenant_id_key');
 
         $array = $item->toArray();
         $keys = array_keys($array);
@@ -359,7 +358,6 @@ class ModelTest extends TestCase
             , 'created_at'
             , 'updated_at'
             , $docTypeKey
-            , $tenantIdKey
             , 'category'
             , 'name'
         ];
