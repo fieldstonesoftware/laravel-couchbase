@@ -101,6 +101,14 @@ class Model extends BaseModel
      */
     public function getTenantId(){
         if($this->relationLoaded('tenant')){
+            $arrTenantId = explode(self::KEY_SEGMENT_SEPARATOR, $this->tenant->_id);
+            $cSegment = count($arrTenantId);
+
+            // if it has 4 segments, grab the last 2
+            // this is common if the tenant ID uses a tenant ID of its own
+            if($cSegment === 4) return $arrTenantId[2].self::KEY_SEGMENT_SEPARATOR.$arrTenantId[3];
+
+            // otherwise, (normally 2 segments) use it all
             return $this->tenant->_id;
         }
 
@@ -164,7 +172,7 @@ class Model extends BaseModel
 
         // prepend the tenant id if available
         $sKey = '';
-        if(empty($tenantId)){
+        if(!empty($tenantId)){
             $sKey = $tenantId.self::KEY_SEGMENT_SEPARATOR;
         }
 
@@ -634,6 +642,11 @@ class Model extends BaseModel
      */
     public function performInsert(\Illuminate\Database\Eloquent\Builder $query)
     {
+        // If it is not set, set the document ID
+        if(!isset($this->attributes['_id'])){
+            $this->attributes['_id'] = $this->getNewKeyValue();
+        }
+
         // set document type
         $this->setAttribute($this->getDocumentTypeKeyName(), $this->getDocumentType());
 
@@ -641,12 +654,6 @@ class Model extends BaseModel
         $tenantId = $this->getTenantId();
         if(!empty($tenantId)){
             $this->setAttribute($this->getTenantIdKeyName(), $this->getTenantId());
-        }
-
-        // If it is not set, set the document ID
-        // The tenant ID can go into this so we do it last.
-        if(!isset($this->attributes['_id']) && !isset($this->attributes[$this->getKeyName()])){
-            $this->setAttribute($this->getKeyName(), $this->getNewKeyValue());
         }
 
         return parent::performInsert($query);
