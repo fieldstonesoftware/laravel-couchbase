@@ -29,6 +29,14 @@ class Model extends BaseModel
     protected $primaryKey = '_id';
 
     /**
+     * Couchbase does not store the key in the document by default
+     * but when we embed models in models, its helpful to have the
+     * ID in all documents. This is what you want to call it.
+     * @var string
+     */
+    protected $keyNameInDoc = 'key_id';
+
+    /**
      * The primary key type.
      * @var string
      */
@@ -66,6 +74,12 @@ class Model extends BaseModel
      * @var string
      */
     protected $dateFormat = DateTime::ISO8601;
+
+
+    public function __construct(array $attributes = [])
+    {
+        parent::__construct($attributes);
+    }
 
     /**
      * Custom accessor for the model's id.
@@ -167,9 +181,11 @@ class Model extends BaseModel
      */
     public function getNewKeyValue($uniqueId = null)
     {
-        $tenantId = $this->getTenantId();
-        $documentType = $this->getDocumentType();
+        return self::sGetNewKeyValue($this->getDocumentType(), $this->getTenantId(), $uniqueId);
+    }
 
+    public static function sGetNewKeyValue($documentType, $tenantId=null, $uniqueId=null)
+    {
         // prepend the tenant id if available
         $sKey = '';
         if(!empty($tenantId)){
@@ -645,6 +661,11 @@ class Model extends BaseModel
         // If it is not set, set the document ID
         if(!isset($this->attributes['_id'])){
             $this->attributes['_id'] = $this->getNewKeyValue();
+        }
+
+        // If it is not set, set the KeyId
+        if(!isset($this->attributes[$this->keyNameInDoc])){
+            $this->attributes[$this->keyNameInDoc] = $this->attributes['_id'];
         }
 
         // set document type

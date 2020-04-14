@@ -105,6 +105,14 @@ class Builder extends IlluminateQueryBuilder
     public $sTenantId = null;  // the tenant ID - default to null - unused
 
     /**
+     * Couchbase does not store the key in the document by default
+     * but when we embed models in models, its helpful to have the
+     * ID in all documents. This is what you want to call the field.
+     * @var string
+     */
+    public $sInDocIdKey;
+
+    /**
      * Create a new query builder instance.
      *
      * @param ConnectionInterface $connection
@@ -130,6 +138,7 @@ class Builder extends IlluminateQueryBuilder
 
         $this->sDocTypeKey = config('couchbase.type_key','doc_type');
         $this->sTenantIdKey = config('couchbase.tenant_id_key','tenant_id');
+        $this->sInDocIdKey = config('couchbase.in_doc_id_key','key_id');
 
         // add the type key to the operator list
         array_push($this->operators, $this->sDocTypeKey);
@@ -473,6 +482,11 @@ class Builder extends IlluminateQueryBuilder
                 $docId = $document['id'];
                 unset($document['id']);
             }
+        }
+
+        // set the in-document id if not set
+        if(!isset($document[$this->sInDocIdKey])){
+            $document[$this->sInDocIdKey] = $docId;
         }
 
         // set the tenant id if not set and non-empty

@@ -355,6 +355,7 @@ class ModelTest extends TestCase
         $keys = array_keys($array);
         $testKeys = [
             '_id'
+            , 'key_id'
             , 'created_at'
             , 'updated_at'
             , $docTypeKey
