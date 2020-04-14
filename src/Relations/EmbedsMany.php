@@ -45,10 +45,13 @@ class EmbedsMany extends EmbedsOneOrMany
     public function performInsert(Model $model)
     {
         // Generate a new key if needed.
-
         if ($model->getKeyName() == '_id' and !$model->getKey()) {
             $model->setAttribute('_id', $model->getNewKeyValue());
         }
+
+        // Set the in-document key
+        $model->setAttribute($model->getKeyNameInDoc(), $model->getAttribute('_id'));
+
         // For deeply nested documents, let the parent handle the changes.
         if ($this->isNested()) {
             $this->associate($model);

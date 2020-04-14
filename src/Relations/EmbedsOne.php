@@ -45,6 +45,9 @@ class EmbedsOne extends EmbedsOneOrMany
             $model->setAttribute('_id', uniqid());
         }
 
+        // Set the in-document key
+        $model->setAttribute($model->getKeyNameInDoc(), $model->getAttribute('_id'));
+
         // For deeply nested documents, let the parent handle the changes.
         if ($this->isNested()) {
             $this->associate($model);

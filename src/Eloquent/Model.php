@@ -98,6 +98,15 @@ class Model extends BaseModel
     }
 
     /**
+     * Return the field name for the in document key
+     * @return string
+     */
+    public function getKeyNameInDoc()
+    {
+        return $this->keyNameInDoc;
+    }
+
+    /**
      * Must be implemented to return the document type for this model.
      */
     public function getDocumentType()
@@ -217,7 +226,7 @@ class Model extends BaseModel
     {
         // If no relation name was given, we will use this debug backtrace to extract
         // the calling method's name and use that as the relationship name as most
-        // of the time this will be what we desire to use for the relatinoships.
+        // of the time this will be what we desire to use for the relationships.
         if (is_null($relation)) {
             list(, $caller) = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2);
 
