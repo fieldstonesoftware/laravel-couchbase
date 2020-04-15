@@ -71,9 +71,11 @@ class Model extends BaseModel
 
     /**
      * The default date format.
+     * DateTime::ISO8601 but with a proper offset including the colon
+     * Override this in your model to whatever format you like.
      * @var string
      */
-    protected $dateFormat = DateTime::ISO8601;
+    protected $dateFormat = "Y-m-d\TH:i:sP";
 
     public function __construct(array $attributes = [])
     {
