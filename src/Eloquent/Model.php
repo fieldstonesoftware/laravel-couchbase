@@ -71,10 +71,10 @@ class Model extends BaseModel
 
     /**
      * The default date format.
+     * DateTime::ISO8601 WITH microseconds (the .u) part
      * @var string
      */
-    protected $dateFormat = DateTime::ISO8601;
-
+    protected $dateFormat = "Y-m-d\TH:i:s.uO";
 
     public function __construct(array $attributes = [])
     {
