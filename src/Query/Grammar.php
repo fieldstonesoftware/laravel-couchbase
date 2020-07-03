@@ -353,7 +353,51 @@ class Grammar extends IlluminateDBQueryGrammar
 
         $where = $this->compileWheres($query);
 
+        $arrObjPrefix = [];
         $forIns = [];
+
+        // Generate FOR IN WHEN END statements to set objects in update values
+        // that may not exist or may be set to null
+        foreach ($query->forIns as $forIn) {
+
+            // ensure field paths are sorted
+            $arrSortedValues = array_keys($forIn['values']);
+            ksort($arrSortedValues);
+
+            foreach($arrSortedValues as $key){
+                // last element should be a field name - remove it.
+                $arrField = explode('.', $key);
+                $cArrField = count($arrField);
+
+                if($cArrField > 1){
+                    $arrParent = $arrField;
+                    unset($arrParent[$cArrField-1]);
+
+                    $arrParentParent = $arrParent;
+                    unset($arrParentParent[$cArrField-2]);
+
+                    if(!empty($arrParentParent)){
+                        $parentPath = implode('.',$arrParent);
+                        $arrObjPrefix[$parentPath]['parent_parent'] = implode('.',$arrParentParent);
+                        $arrObjPrefix[$parentPath]['for_in_col'] = $forIn['column'];
+                        $arrObjPrefix[$parentPath]['for_in_value'] = $forIn['value'];
+                    }
+                }
+            }
+        }
+
+        foreach($arrObjPrefix as $fldParentPath => $arrProp){
+            $forIns[] = $this->wrap($fldParentPath) .
+                '={} FOR ' .
+                $this->wrap(Str::singular($arrProp['parent_parent'])) .
+                ' IN ' .
+                $this->wrap($arrProp['parent_parent']) .
+                ' WHEN ' . $this->wrap($arrProp['for_in_col']) .
+                '=' . $this->wrapData($arrProp['for_in_value']) .
+                ' AND '. $this->wrap($fldParentPath)
+                .' IS NOT VALUED END';
+        }
+
         foreach ($query->forIns as $forIn) {
             foreach ($forIn['values'] as $key => $value) {
                 $forIns[] = $this->wrap($key) .
@@ -372,7 +416,6 @@ class Grammar extends IlluminateDBQueryGrammar
 
         $setColumns = implode(', ', $columns + $forIns);
         $unsetColumns = implode(', ', $unsetColumns);
-
         return trim('update ' . $table
             . ' ' . $useClause
             . ($setColumns ? (' set ' . $setColumns) : '')
