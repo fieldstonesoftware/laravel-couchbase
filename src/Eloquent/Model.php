@@ -166,7 +166,7 @@ class Model extends BaseModel
      */
     public static function getDocumentTypeKeyName()
     {
-        return config('couchbase.type_key');
+        return config('couchbase.type_key','doc_type');
     }
 
     /**
@@ -176,7 +176,7 @@ class Model extends BaseModel
      */
     public function getTenantIdKeyName()
     {
-        return config('couchbase.tenant_id_key');
+        return config('couchbase.tenant_id_key','tenant_id');
     }
 
     /**
